@@ -3,6 +3,15 @@ name = "drova_plugins"
 version = "1.0.0"
 edition = "2021"
 
+authors = ["artegoser"]
+license = "MIT"
+description = "Main plugins for drova"
+repository = "https://github.com/tempoworks/drova"
+homepage = "https://github.com/TempoWorks/drova/tree/main/drova_plugins"
+readme = "./README.md"
+keywords = ["drova", "plugins"]
+categories = ["text-processing", "network-programming"]
+
 [dependencies]
 dalet = "1.0.0-pre.28"
 url = "2.5.4"

@@ -3,6 +3,15 @@ name = "drova_sdk"
 version = "1.0.0"
 edition = "2021"
 
+authors = ["artegoser"]
+license = "MIT"
+description = "Sdk for absolute converter of formats for dalet"
+repository = "https://github.com/tempoworks/drova"
+homepage = "https://github.com/TempoWorks/drova/tree/main"
+readme = "./README.md"
+keywords = ["drova"]
+categories = ["text-processing", "network-programming"]
+
 [dependencies]
 dalet = "1.0.0-pre.28"
 url = "2.5.4"
