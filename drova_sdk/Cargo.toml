@@ -1,6 +1,6 @@
 [package]
 name = "drova_sdk"
-version = "1.0.3"
+version = "1.0.4"
 edition = "2021"
 
 authors = ["artegoser"]
@@ -22,3 +22,5 @@ async-trait = "0.1.88"
 indexmap = '2.9.0'
 
 glob-match = "0.2.1"
+
+serde = { version = "1", features = ["derive"] }

@@ -2,15 +2,16 @@ use async_trait::async_trait;
 use dalet::typed::Page;
 use glob_match::glob_match;
 use indexmap::IndexMap;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ResponseData {
     TextOutput(String),
     BitsOutput(Vec<u8>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Error {
     GetInput,
     GetSecureInput,
@@ -54,6 +55,7 @@ pub enum Error {
     InvalidSyntax,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Response {
     pub data: ResponseData,
     pub mime: String,
