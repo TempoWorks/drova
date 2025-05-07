@@ -153,32 +153,19 @@ impl Default for CoreBuilder<'_> {
 }
 
 impl<'a> CoreBuilder<'a> {
-    pub fn plugins<R>(&'a mut self, registrars: Vec<R>) -> &'a mut Self
+    pub fn plugin<R>(self, registrar: R) -> Self
     where
-        R: Fn(&mut CoreBuilder),
+        R: Fn(CoreBuilder) -> CoreBuilder,
     {
-        for registrar in registrars {
-            registrar(self);
-        }
-
-        self
+        registrar(self)
     }
 
-    pub fn plugin<R>(&'a mut self, registrar: R) -> &'a mut Self
-    where
-        R: Fn(&mut CoreBuilder),
-    {
-        registrar(self);
-
-        self
-    }
-
-    pub fn protocol(&'a mut self, schema: &'a str, protocol: &'a dyn Protocol) -> &'a mut Self {
+    pub fn protocol(mut self, schema: &'a str, protocol: &'a dyn Protocol) -> Self {
         self.core.protocols.insert(schema.into(), protocol);
         self
     }
 
-    pub fn input(&'a mut self, ty: &'a str, input: &'a dyn Input) -> &'a mut Self {
+    pub fn input(mut self, ty: &'a str, input: &'a dyn Input) -> Self {
         self.core.inputs.insert(ty.into(), input);
         self
     }

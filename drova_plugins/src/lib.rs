@@ -9,11 +9,11 @@ pub mod gemini;
 pub mod http;
 pub mod text;
 
-pub fn plugins<'a>(app: &'a mut CoreBuilder<'a>) {
+pub fn plugins(app: CoreBuilder) -> CoreBuilder {
     app.protocol("http", &HttpProtocol)
         .protocol("https", &HttpProtocol)
         .protocol("gemini", &GeminiProtocol)
         .input("text/gemini", &GemtextInput)
         .input("text/plain", &TextInput)
-        .input("text/*", &TextInput);
+        .input("text/*", &TextInput)
 }
