@@ -1,6 +1,6 @@
 [package]
 name = "drova_plugins"
-version = "1.0.5"
+version = "1.0.6"
 edition = "2021"
 
 authors = ["artegoser"]
@@ -13,11 +13,11 @@ keywords = ["drova", "plugins"]
 categories = ["text-processing", "network-programming"]
 
 [dependencies]
-dalet = { version = "1.0.0-pre.28", features = [
+dalet = { version = "1.0.0-pre.29", features = [
   "types",
 ], default-features = false }
 url = "2.5.4"
-drova_sdk = { path = "../drova_sdk", version = "1.0.5" }
+drova_sdk = { path = "../drova_sdk", version = "1.0.6" }
 tokio-gemini = { version = "0.5.2" }
 bytes = "1.10.1"
 
