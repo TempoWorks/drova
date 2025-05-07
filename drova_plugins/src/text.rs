@@ -1,9 +1,9 @@
 use dalet::typed::{Page, Tag};
 use drova_sdk::{Error, Input};
 
-pub struct GemtextInput;
+pub struct TextInput;
 
-impl Input for GemtextInput {
+impl Input for TextInput {
     fn process_text(
         &self,
         data: String,

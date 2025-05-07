@@ -171,13 +171,13 @@ impl<'a> CoreBuilder<'a> {
         self
     }
 
-    pub fn protocol(&'a mut self, schema: String, protocol: &'a dyn Protocol) -> &'a mut Self {
-        self.core.protocols.insert(schema, protocol);
+    pub fn protocol(&'a mut self, schema: &'a str, protocol: &'a dyn Protocol) -> &'a mut Self {
+        self.core.protocols.insert(schema.into(), protocol);
         self
     }
 
-    pub fn input(&'a mut self, ty: String, input: &'a dyn Input) -> &'a mut Self {
-        self.core.inputs.insert(ty, input);
+    pub fn input(&'a mut self, ty: &'a str, input: &'a dyn Input) -> &'a mut Self {
+        self.core.inputs.insert(ty.into(), input);
         self
     }
 
