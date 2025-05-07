@@ -84,7 +84,7 @@ impl Default for Core<'_> {
 }
 
 impl<'a> Core<'a> {
-    pub async fn process(self, s: &str) -> Result<Page, Error> {
+    pub async fn process(&self, s: &str) -> Result<Page, Error> {
         use ResponseData::*;
 
         let url = Url::parse(s)?;
@@ -117,14 +117,14 @@ impl<'a> Core<'a> {
         }
     }
 
-    pub fn process_text(self, ty: &str, s: String) -> Result<Page, Error> {
+    pub fn process_text(&self, ty: &str, s: String) -> Result<Page, Error> {
         self.inputs
             .get(ty)
             .ok_or(Error::UnsupportedInput)?
             .process_text(s, None)
     }
 
-    pub fn process_bytes(self, ty: &str, s: Vec<u8>) -> Result<Page, Error> {
+    pub fn process_bytes(&self, ty: &str, s: Vec<u8>) -> Result<Page, Error> {
         self.inputs
             .get(ty)
             .ok_or(Error::UnsupportedInput)?
