@@ -1,6 +1,6 @@
 [package]
 name = "drova_sdk"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 
 authors = ["artegoser"]
@@ -13,7 +13,9 @@ keywords = ["drova"]
 categories = ["text-processing", "network-programming"]
 
 [dependencies]
-dalet = "1.0.0-pre.28"
+dalet = { version = "1.0.0-pre.28", features = [
+  "types",
+], default-features = false }
 url = "2.5.4"
 
 async-trait = "0.1.88"
