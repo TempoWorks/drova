@@ -1,7 +1,7 @@
 use std::str;
 
 use async_trait::async_trait;
-use drova_sdk::{Error, Protocol, Response, ResponseType};
+use drova_sdk::{Error, Protocol, Response, ResponseData};
 use tokio_gemini::{certs::SelfsignedCertVerifier, LibError, StatusCode};
 
 use crate::utils::mime_to_str;
@@ -26,11 +26,11 @@ impl Protocol for GeminiProtocol {
 
                 match mime.starts_with("text") {
                     true => Ok(Response {
-                        ty: ResponseType::TextOutput(resp.text().await.map_err(match_lib_err)?),
+                        data: ResponseData::TextOutput(resp.text().await.map_err(match_lib_err)?),
                         mime,
                     }),
                     false => Ok(Response {
-                        ty: ResponseType::BitsOutput(
+                        data: ResponseData::BitsOutput(
                             resp.bytes().await.map_err(match_lib_err)?.to_vec(),
                         ),
                         mime,
@@ -48,13 +48,13 @@ impl Protocol for GeminiProtocol {
             StatusCode::ProxyError => Err(Error::UnsupportedProtocol),
             StatusCode::SlowDown => Err(Error::TooManyRequests),
             StatusCode::PermFail => Err(Error::Failure),
-            StatusCode::Gone => Err(Error::NoLongerAvailable),
+            StatusCode::Gone => Err(Error::Gone),
             StatusCode::ProxyRequestRefused => todo!(),
             StatusCode::BadRequest => Err(Error::BadRequest),
             StatusCode::ClientCerts => Err(Error::ClientCertRequired),
             StatusCode::CertNotAuthorized => Err(Error::NotAuthorized),
             StatusCode::CertNotValid => Err(Error::InvalidCert),
-            StatusCode::Unknown(n) => Err(Error::UnknownStatus(n)),
+            StatusCode::Unknown(s) => Err(Error::UnknownStatus(s.into())),
         }
     }
 }

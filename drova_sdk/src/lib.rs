@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use url::Url;
 
 #[derive(Debug)]
-pub enum ResponseType {
+pub enum ResponseData {
     TextOutput(String),
     BitsOutput(Vec<u8>),
 }
@@ -43,19 +43,19 @@ pub enum Error {
 
     TooManyRequests,
 
-    NoLongerAvailable,
+    Gone,
 
     BadRequest,
     Forbidden,
 
-    UnknownStatus(u8),
+    UnknownStatus(usize),
     InvalidStatus,
 
     InvalidSyntax,
 }
 
 pub struct Response {
-    pub ty: ResponseType,
+    pub data: ResponseData,
     pub mime: String,
 }
 
@@ -85,7 +85,7 @@ impl Default for Core<'_> {
 
 impl<'a> Core<'a> {
     pub async fn process(self, s: &str) -> Result<Page, Error> {
-        use ResponseType::*;
+        use ResponseData::*;
 
         let url = Url::parse(s)?;
 
@@ -111,7 +111,7 @@ impl<'a> Core<'a> {
             })
             .ok_or(Error::UnsupportedInput)?;
 
-        match resp.ty {
+        match resp.data {
             TextOutput(s) => input.process_text(s, Some(&url)),
             BitsOutput(b) => input.process_bytes(b, Some(&url)),
         }

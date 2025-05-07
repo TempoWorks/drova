@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use drova_sdk::{Error, Protocol, Response, ResponseType};
+use drova_sdk::{Error, Protocol, Response, ResponseData};
 use mime::Mime;
 use reqwest::header::CONTENT_TYPE;
 
@@ -30,11 +30,11 @@ impl Protocol for HttpProtocol {
 
         match mime.starts_with("text") {
             true => Ok(Response {
-                ty: ResponseType::TextOutput(res.text().await.map_err(match_reqwest_error)?),
+                data: ResponseData::TextOutput(res.text().await.map_err(match_reqwest_error)?),
                 mime,
             }),
             false => Ok(Response {
-                ty: ResponseType::BitsOutput(
+                data: ResponseData::BitsOutput(
                     res.bytes().await.map_err(match_reqwest_error)?.to_vec(),
                 ),
                 mime,
@@ -52,7 +52,11 @@ fn match_reqwest_error(e: reqwest::Error) -> Error {
             404 => Error::NotFound,
             405 => Error::MethodNotAllowed,
             406 => Error::NotAcceptable,
-            _ => Error::InvalidStatus,
+            410 => Error::Gone,
+            429 => Error::TooManyRequests,
+            500 => Error::Failure,
+            503 => Error::ServerUnavailable,
+            s => Error::UnknownStatus(s.into()),
         },
         None => Error::InvalidStatus,
     }
