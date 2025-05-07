@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["drova-sdk","drova-plugins"]
+members = ["drova_sdk", "drova_plugins"]

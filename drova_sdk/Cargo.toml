@@ -1,0 +1,13 @@
+[package]
+name = "drova_sdk"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+dalet = "1.0.0-pre.28"
+url = "2.5.4"
+
+async-trait = "0.1.88"
+indexmap = '2.9.0'
+
+glob-match = "0.2.1"
