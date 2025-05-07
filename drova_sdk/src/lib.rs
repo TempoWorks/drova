@@ -60,11 +60,11 @@ pub struct Response {
 }
 
 #[async_trait]
-pub trait Protocol {
+pub trait Protocol: Send + Sync {
     async fn fetch(&self, url: &Url) -> Result<Response, Error>;
 }
 
-pub trait Input {
+pub trait Input: Send + Sync {
     fn process_text(&self, s: String, url: Option<&Url>) -> Result<Page, Error>;
     fn process_bytes(&self, b: Vec<u8>, url: Option<&Url>) -> Result<Page, Error>;
 }
