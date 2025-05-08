@@ -25,7 +25,7 @@ impl Protocol for HttpProtocol {
                 }
             }
             .parse::<Mime>()
-            .map_err(|_| Error::InvalidMimeType)?,
+            .map_err(|e| Error::InvalidMimeType(e.to_string()))?,
         );
 
         match mime.starts_with("text") {

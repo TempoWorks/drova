@@ -26,12 +26,12 @@ pub enum Error {
     UnsupportedProtocol,
     UnsupportedInput,
 
-    IoError,
+    IoError(String),
     DnsFailed,
     TlsFailed,
     ExceededStatusSize,
     InvalidEncoding,
-    InvalidMimeType,
+    InvalidMimeType(String),
 
     InvalidCert,
 

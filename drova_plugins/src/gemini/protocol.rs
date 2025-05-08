@@ -75,12 +75,12 @@ impl SelfsignedCertVerifier for CertVerifier {
 
 fn match_lib_err(e: LibError) -> Error {
     match e {
-        LibError::IoError(_) => Error::IoError,
+        LibError::IoError(e) => Error::IoError(e.to_string()),
         LibError::InvalidUrlError(_) => Error::InvalidUrl,
         LibError::HostLookupError => Error::DnsFailed,
         LibError::RustlsError(_) => Error::TlsFailed,
         LibError::StatusOutOfRange(_) => Error::ExceededStatusSize,
         LibError::DataNotUtf8(_) => Error::InvalidEncoding,
-        LibError::InvalidMime(_) => Error::InvalidMimeType,
+        LibError::InvalidMime(e) => Error::InvalidMimeType(e.to_string()),
     }
 }
