@@ -15,7 +15,7 @@ impl Input for TextInput {
         Ok(Page {
             title: Some(title.into()),
             description: Some(description.into()),
-            body: vec![Tag::El { body: data.into() }],
+            body: vec![Tag::Pre { body: data.into() }],
         })
     }
 
