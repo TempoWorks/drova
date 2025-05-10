@@ -183,16 +183,30 @@ fn convert_node(
         }),
 
         Node::ThematicBreak(_) => Ok(Tag::HorizontalBreak),
-        Node::Heading(n) => Ok(Tag::Heading {
-            body: nodes_to_text(n.children)?,
-            heading: n
-                .depth
-                .try_into()
-                .unwrap_or(dalet::typed::HeadingLevel::Six),
-        }),
-        Node::Paragraph(n) => Ok(Tag::Paragraph {
-            body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
-        }),
+        Node::Heading(n) => {
+            let text = nodes_to_text(n.children)?;
+
+            if page.title.is_none() {
+                page.title = Some(text.clone());
+            };
+
+            Ok(Tag::Heading {
+                body: text,
+                heading: n
+                    .depth
+                    .try_into()
+                    .unwrap_or(dalet::typed::HeadingLevel::Six),
+            })
+        }
+        Node::Paragraph(n) => {
+            if page.description.is_none() {
+                page.description = Some(nodes_to_text(n.children.clone())?);
+            }
+
+            Ok(Tag::Paragraph {
+                body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
+            })
+        }
 
         Node::TableRow(_) => Err(Error::InvalidSyntax),
 
@@ -253,15 +267,15 @@ fn nodes_to_text(nodes: Vec<Node>) -> Result<Text, Error> {
             Node::TableCell(n) => output.push_str(&nodes_to_text(n.children)?),
             Node::ListItem(n) => output.push_str(&nodes_to_text(n.children)?),
             Node::Paragraph(n) => output.push_str(&nodes_to_text(n.children)?),
-            Node::MdxTextExpression(_) => Err(Error::InvalidSyntax)?,
-            Node::Root(_) => Err(Error::InvalidSyntax)?,
-            Node::Html(_) => Err(Error::InvalidSyntax)?,
-            Node::MdxjsEsm(_) => Err(Error::InvalidSyntax)?,
-            Node::MdxJsxFlowElement(_) => Err(Error::InvalidSyntax)?,
-            Node::MdxJsxTextElement(_) => Err(Error::InvalidSyntax)?,
-            Node::MdxFlowExpression(_) => Err(Error::InvalidSyntax)?,
-            Node::Toml(_) => Err(Error::InvalidSyntax)?,
-            Node::Yaml(_) => Err(Error::InvalidSyntax)?,
+            Node::MdxTextExpression(_)
+            | Node::Root(_)
+            | Node::Html(_)
+            | Node::MdxjsEsm(_)
+            | Node::MdxJsxFlowElement(_)
+            | Node::MdxJsxTextElement(_)
+            | Node::MdxFlowExpression(_)
+            | Node::Toml(_)
+            | Node::Yaml(_) => {}
         };
     }
 
