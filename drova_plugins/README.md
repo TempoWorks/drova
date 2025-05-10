@@ -8,6 +8,17 @@ Absolute collection of plugins for DROVA.
 
 </div>
 
+# Usage
+
+```rust
+use drova_sdk::RequesterBuilder;
+use drova_plugins::requester_plugins;
+
+let requester = RequesterBuilder::default().plugin(requester_plugins).build();
+
+println!("{:#?}", requester.process("gemini://example.com"))
+```
+
 # Supported protocols
 
 - [x] Http/s

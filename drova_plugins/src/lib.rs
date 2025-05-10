@@ -11,7 +11,7 @@ pub mod http;
 pub mod markdown;
 pub mod text;
 
-pub fn plugins(app: RequesterBuilder) -> RequesterBuilder {
+pub fn requester_plugins(app: RequesterBuilder) -> RequesterBuilder {
     app.protocol("http", &HttpProtocol)
         .protocol("https", &HttpProtocol)
         .protocol("gemini", &GeminiProtocol)
