@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use dalet::typed::{
-    Body, Page,
-    Tag::{self, *},
-    Text,
-};
+use dalet::typed::{ListStyle, Page, TableRows, Tag, Text};
 use drova_sdk::{Error, Input};
 use markdown::mdast::Node;
 use url::Url;
@@ -28,11 +24,10 @@ impl Input for MarkdownInput {
 
         match ast {
             Node::Root(root) => {
-                for node in root.children {
-                    let tag = manage_node(&mut page, &mut foot_count, &mut footnotes, node)?;
+                manage_foot_links(&mut foot_count, &mut footnotes, &root.children);
 
-                    page.body.push(tag);
-                }
+                page.body =
+                    convert_nodes(&mut page, &mut foot_count, &mut footnotes, root.children)?;
             }
 
             _ => {
@@ -48,7 +43,24 @@ impl Input for MarkdownInput {
     }
 }
 
-fn manage_node(
+fn manage_foot_links(
+    foot_count: &mut u64,
+    footnotes: &mut HashMap<String, u64>,
+    nodes: &Vec<Node>,
+) {
+    for node in nodes {
+        match node {
+            Node::FootnoteDefinition(n) => {
+                footnotes.insert(n.identifier.clone(), *foot_count);
+
+                *foot_count += 1;
+            }
+            _ => {}
+        }
+    }
+}
+
+fn convert_node(
     page: &mut Page,
     foot_count: &mut u64,
     footnotes: &mut HashMap<String, u64>,
@@ -56,7 +68,7 @@ fn manage_node(
 ) -> Result<Tag, Error> {
     match node {
         Node::Blockquote(n) => Ok(Tag::BlockQuote {
-            body: manage_nodes(page, foot_count, footnotes, n.children)?.into(),
+            body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
         }),
 
         Node::Break(_) => Ok(Tag::LineBreak),
@@ -106,16 +118,10 @@ fn manage_node(
 
         Node::Definition(n) => Ok(Tag::Anchor { id: n.identifier }),
 
-        Node::FootnoteDefinition(n) => {
-            footnotes.insert(n.identifier, *foot_count);
-
-            *foot_count += 1;
-
-            Ok(Tag::FootNote {
-                body: nodes_to_text(n.children)?.into(),
-                footnote: *foot_count - 1,
-            })
-        }
+        Node::FootnoteDefinition(n) => Ok(Tag::FootNote {
+            body: nodes_to_text(n.children)?.into(),
+            footnote: *footnotes.get(&n.identifier).unwrap(),
+        }),
 
         Node::FootnoteReference(n) => Ok(Tag::FootLink {
             footnote: *footnotes
@@ -126,8 +132,46 @@ fn manage_node(
                 )))?,
         }),
 
-        Node::List(n) => todo!(),
-        Node::Table(n) => todo!(),
+        Node::List(n) => Ok(Tag::List {
+            body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
+            style: if n.ordered {
+                ListStyle::Decimal
+            } else {
+                ListStyle::Disc
+            },
+        }),
+        Node::ListItem(n) => Ok(Tag::Element {
+            body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
+        }),
+
+        Node::Table(n) => {
+            let mut rows: Vec<TableRows> = vec![];
+            let mut primary_been = false;
+
+            for row in n.children {
+                match row {
+                    Node::TableCell(n) => {
+                        if primary_been {
+                            rows.push(TableRows::Default(
+                                convert_nodes(page, foot_count, footnotes, n.children)?.into(),
+                            ));
+                        } else {
+                            primary_been = true;
+                            rows.push(TableRows::Primary(
+                                convert_nodes(page, foot_count, footnotes, n.children)?.into(),
+                            ));
+                        }
+                    }
+                    _ => Err(Error::ParserError("Invalid tag in Table".into()))?,
+                }
+            }
+
+            Ok(Tag::Table { body: rows })
+        }
+
+        Node::TableCell(n) => Ok(Tag::Element {
+            body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
+        }),
 
         Node::ThematicBreak(_) => Ok(Tag::HorizontalBreak),
         Node::Heading(n) => Ok(Tag::Heading {
@@ -135,11 +179,10 @@ fn manage_node(
             heading: n.depth.try_into().map_err(|_| Error::InvalidSyntax)?,
         }),
         Node::Paragraph(n) => Ok(Tag::Paragraph {
-            body: manage_nodes(page, foot_count, footnotes, n.children)?.into(),
+            body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
         }),
 
-        // Can only be in table or list
-        Node::TableRow(_) | Node::TableCell(_) | Node::ListItem(_) => Err(Error::InvalidSyntax),
+        Node::TableRow(_) => Err(Error::InvalidSyntax),
 
         // Unsupported
         Node::Root(_)
@@ -156,7 +199,7 @@ fn manage_node(
     }
 }
 
-fn manage_nodes(
+fn convert_nodes(
     page: &mut Page,
     foot_count: &mut u64,
     footnotes: &mut HashMap<String, u64>,
@@ -164,7 +207,7 @@ fn manage_nodes(
 ) -> Result<Vec<Tag>, Error> {
     nodes
         .into_iter()
-        .map(|node| manage_node(page, foot_count, footnotes, node))
+        .map(|node| convert_node(page, foot_count, footnotes, node))
         .collect()
 }
 
