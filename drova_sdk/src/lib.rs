@@ -72,12 +72,12 @@ pub trait Input: Send + Sync {
     fn process_bytes(&self, b: Vec<u8>, url: Option<&Url>) -> Result<Page, Error>;
 }
 
-pub struct Core<'a> {
+pub struct Requester<'a> {
     protocols: IndexMap<String, &'a dyn Protocol>,
     inputs: IndexMap<String, &'a dyn Input>,
 }
 
-impl Default for Core<'_> {
+impl Default for Requester<'_> {
     fn default() -> Self {
         Self {
             protocols: IndexMap::new(),
@@ -86,7 +86,7 @@ impl Default for Core<'_> {
     }
 }
 
-impl<'a> Core<'a> {
+impl<'a> Requester<'a> {
     pub async fn process(&self, s: &str) -> Result<Page, Error> {
         use ResponseData::*;
 
@@ -141,22 +141,22 @@ impl From<url::ParseError> for Error {
     }
 }
 
-pub struct CoreBuilder<'a> {
-    core: Core<'a>,
+pub struct RequesterBuilder<'a> {
+    core: Requester<'a>,
 }
 
-impl Default for CoreBuilder<'_> {
+impl Default for RequesterBuilder<'_> {
     fn default() -> Self {
         Self {
-            core: Core::default(),
+            core: Requester::default(),
         }
     }
 }
 
-impl<'a> CoreBuilder<'a> {
+impl<'a> RequesterBuilder<'a> {
     pub fn plugin<R>(self, registrar: R) -> Self
     where
-        R: Fn(CoreBuilder) -> CoreBuilder,
+        R: Fn(RequesterBuilder) -> RequesterBuilder,
     {
         registrar(self)
     }
@@ -171,7 +171,7 @@ impl<'a> CoreBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> Core<'a> {
+    pub fn build(self) -> Requester<'a> {
         self.core
     }
 }

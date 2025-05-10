@@ -1,4 +1,4 @@
-use drova_sdk::CoreBuilder;
+use drova_sdk::RequesterBuilder;
 use gemini::{gemtext::GemtextInput, protocol::GeminiProtocol};
 use http::protocol::HttpProtocol;
 use markdown::MarkdownInput;
@@ -11,7 +11,7 @@ pub mod http;
 pub mod markdown;
 pub mod text;
 
-pub fn plugins(app: CoreBuilder) -> CoreBuilder {
+pub fn plugins(app: RequesterBuilder) -> RequesterBuilder {
     app.protocol("http", &HttpProtocol)
         .protocol("https", &HttpProtocol)
         .protocol("gemini", &GeminiProtocol)
