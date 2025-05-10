@@ -37,14 +37,14 @@ impl Input for GemtextInput {
                 let url = body.next().ok_or(Error::InvalidSyntax)?.trim();
 
                 match body.next() {
-                    Some(label) => page.push(P {
+                    Some(label) => page.push(Paragraph {
                         body: vec![NavLink {
                             body: Some(label.trim().into()),
                             dref: url.into(),
                         }]
                         .into(),
                     }),
-                    None => page.push(P {
+                    None => page.push(Paragraph {
                         body: vec![NavLink {
                             body: None,
                             dref: url.into(),
@@ -59,29 +59,29 @@ impl Input for GemtextInput {
                     title = Some(body.clone())
                 }
 
-                page.push(H {
+                page.push(Heading {
                     body,
                     heading: HeadingLevel::One,
                 });
             } else if line.starts_with("## ") {
                 let body = line.split_off(3);
-                page.push(H {
+                page.push(Heading {
                     body: body.trim().into(),
                     heading: HeadingLevel::Two,
                 });
             } else if line.starts_with("### ") {
                 let body = line.split_off(4);
-                page.push(H {
+                page.push(Heading {
                     body: body.trim().into(),
                     heading: HeadingLevel::Three,
                 });
             } else if line.starts_with("* ") {
                 let body = line.split_off(2);
-                list.push(El { body: body.into() });
+                list.push(Element { body: body.into() });
                 list_before = true;
             } else if line.starts_with("> ") {
                 let body = line.split_off(2);
-                page.push(Bq { body: body.into() });
+                page.push(BlockQuote { body: body.into() });
             } else if line.starts_with("```") {
                 if preformatted {
                     page.push(Code {
@@ -93,7 +93,7 @@ impl Input for GemtextInput {
 
                 preformatted = !preformatted;
             } else if !line.is_empty() {
-                page.push(P { body: line.into() });
+                page.push(Paragraph { body: line.into() });
             }
         }
 
@@ -115,6 +115,7 @@ impl Input for GemtextInput {
             title,
             description: None,
             body: page,
+            variables: None,
         })
     }
 

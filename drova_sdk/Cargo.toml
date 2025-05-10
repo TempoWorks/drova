@@ -13,7 +13,7 @@ keywords = ["drova"]
 categories = ["text-processing", "network-programming"]
 
 [dependencies]
-dalet = { version = "1.0.0-pre.29", features = [
+dalet = { version = "1.0.0-pre.32", features = [
   "types",
 ], default-features = false }
 url = "2.5.4"

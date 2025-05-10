@@ -7,6 +7,7 @@ mod utils;
 
 pub mod gemini;
 pub mod http;
+pub mod markdown;
 pub mod text;
 
 pub fn plugins(app: CoreBuilder) -> CoreBuilder {

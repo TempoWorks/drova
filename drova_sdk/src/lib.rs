@@ -53,6 +53,7 @@ pub enum Error {
     InvalidStatus,
 
     InvalidSyntax,
+    ParserError(String),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
