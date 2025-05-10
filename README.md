@@ -4,7 +4,7 @@
 
 # DROVA
 
-**D**alet **R**eformatting **O**mni-Format **V**ersatile **A**dapter
+**D**alet **R**eformatting **O**mni-Format **V**ersatile **A**dapter  
 Absolute converter of formats for dalet.
 
 </div>

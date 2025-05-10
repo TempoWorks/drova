@@ -10,6 +10,14 @@ Absolute collection of plugins for DROVA.
 
 # Usage
 
+## Install
+
+```bash
+cargo add drova_plugins
+```
+
+## Example
+
 ```rust
 use drova_sdk::RequesterBuilder;
 use drova_plugins::requester_plugins;
