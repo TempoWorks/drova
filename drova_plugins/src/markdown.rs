@@ -171,7 +171,7 @@ fn convert_node(
                             ));
                         }
                     }
-                    _ => Err(Error::ParserError("Invalid tag in Table".into()))?,
+                    _ => {}
                 }
             }
 
