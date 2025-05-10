@@ -26,8 +26,17 @@ impl Input for MarkdownInput {
             Node::Root(root) => {
                 manage_foot_links(&mut foot_count, &mut footnotes, &root.children);
 
-                page.body =
-                    convert_nodes(&mut page, &mut foot_count, &mut footnotes, root.children)?;
+                for node in root.children {
+                    let tag_q = convert_node(&mut page, &mut foot_count, &mut footnotes, node);
+
+                    match tag_q {
+                        Ok(tag) => page.body.push(tag),
+                        Err(e) => match e {
+                            Error::InvalidSyntax => {}
+                            _ => Err(e)?,
+                        },
+                    }
+                }
             }
 
             _ => {
@@ -176,7 +185,10 @@ fn convert_node(
         Node::ThematicBreak(_) => Ok(Tag::HorizontalBreak),
         Node::Heading(n) => Ok(Tag::Heading {
             body: nodes_to_text(n.children)?,
-            heading: n.depth.try_into().map_err(|_| Error::InvalidSyntax)?,
+            heading: n
+                .depth
+                .try_into()
+                .unwrap_or(dalet::typed::HeadingLevel::Six),
         }),
         Node::Paragraph(n) => Ok(Tag::Paragraph {
             body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
