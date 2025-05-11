@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use drova_sdk::{Error, Protocol, Response, ResponseData};
+use drova_sdk::requester::{Error, ProtocolHandler, Response, ResponseData};
 use mime::Mime;
 use reqwest::header::CONTENT_TYPE;
 
@@ -8,13 +8,13 @@ use crate::utils::mime_to_str;
 pub struct HttpProtocol;
 
 #[async_trait]
-impl Protocol for HttpProtocol {
+impl ProtocolHandler for HttpProtocol {
     async fn fetch(&self, url: &url::Url) -> Result<Response, Error> {
         let res = reqwest::get(url.to_string())
             .await
             .map_err(match_reqwest_error)?;
 
-        let mime = mime_to_str(
+        let ty = mime_to_str(
             {
                 match res.headers().get(CONTENT_TYPE) {
                     Some(header) => match header.to_str() {
@@ -28,16 +28,16 @@ impl Protocol for HttpProtocol {
             .map_err(|e| Error::InvalidMimeType(e.to_string()))?,
         );
 
-        match mime.starts_with("text") {
+        match ty.starts_with("text") {
             true => Ok(Response {
                 data: ResponseData::TextOutput(res.text().await.map_err(match_reqwest_error)?),
-                mime,
+                ty,
             }),
             false => Ok(Response {
                 data: ResponseData::BitsOutput(
                     res.bytes().await.map_err(match_reqwest_error)?.to_vec(),
                 ),
-                mime,
+                ty,
             }),
         }
     }

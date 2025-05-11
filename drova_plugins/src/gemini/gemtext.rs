@@ -1,13 +1,13 @@
-use dalet::typed::{
+use dalet::types::{
     HeadingLevel, ListStyle, Page,
     Tag::{self, *},
 };
-use drova_sdk::{Error, Input};
+use drova_sdk::requester::{Error, InputHandler};
 use url::Url;
 
 pub struct GemtextInput;
 
-impl Input for GemtextInput {
+impl InputHandler for GemtextInput {
     fn process_text(&self, s: String, _: Option<&Url>) -> Result<Page, Error> {
         let mut page: Vec<Tag> = Vec::new();
         let mut preformatted = false;

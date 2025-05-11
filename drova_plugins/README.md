@@ -2,6 +2,8 @@
 
 <img alt="drova logo" src="https://github.com/TempoWorks/.github/raw/main/imgs/Drova.png" width='256'>
 
+[![crates.io](https://img.shields.io/crates/v/drova_plugins.svg)](https://crates.io/crates/drova_plugins)
+
 # DROVA Plugins
 
 Absolute collection of plugins for DROVA.
@@ -22,9 +24,10 @@ cargo add drova_plugins
 use drova_sdk::RequesterBuilder;
 use drova_plugins::requester_plugins;
 
-let requester = RequesterBuilder::default().plugin(requester_plugins).build();
-
-println!("{:#?}", requester.process("gemini://example.com"))
+fn main() {
+  let requester = RequesterBuilder::default().plugin(requester_plugins).build();
+  println!("{:#?}", requester.process("gemini://example.com"))
+}
 ```
 
 # Supported protocols

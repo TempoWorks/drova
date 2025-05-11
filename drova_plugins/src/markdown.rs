@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use dalet::typed::{ListStyle, Page, TableRows, Tag, Text};
-use drova_sdk::{Error, Input};
+use dalet::types::{ListStyle, Page, TableRows, Tag, Text};
+use drova_sdk::requester::{Error, InputHandler};
 use markdown::mdast::Node;
 use url::Url;
 
 pub struct MarkdownInput;
 
-impl Input for MarkdownInput {
+impl InputHandler for MarkdownInput {
     fn process_text(&self, s: String, _: Option<&Url>) -> Result<Page, Error> {
         let ast = markdown::to_mdast(&s, &markdown::ParseOptions::gfm())
             .map_err(|_| Error::InvalidSyntax)?;
@@ -195,7 +195,7 @@ fn convert_node(
                 heading: n
                     .depth
                     .try_into()
-                    .unwrap_or(dalet::typed::HeadingLevel::Six),
+                    .unwrap_or(dalet::types::HeadingLevel::Six),
             })
         }
         Node::Paragraph(n) => {

@@ -1,4 +1,4 @@
-use drova_sdk::RequesterBuilder;
+use drova_sdk::requester::RequesterBuilder;
 use gemini::{gemtext::GemtextInput, protocol::GeminiProtocol};
 use http::protocol::HttpProtocol;
 use markdown::MarkdownInput;

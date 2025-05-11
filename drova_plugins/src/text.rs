@@ -1,14 +1,10 @@
-use dalet::typed::{Page, Tag};
-use drova_sdk::{Error, Input};
+use dalet::types::{Page, Tag};
+use drova_sdk::requester::{Error, InputHandler};
 
 pub struct TextInput;
 
-impl Input for TextInput {
-    fn process_text(
-        &self,
-        data: String,
-        _: Option<&url::Url>,
-    ) -> Result<dalet::typed::Page, drova_sdk::Error> {
+impl InputHandler for TextInput {
+    fn process_text(&self, data: String, _: Option<&url::Url>) -> Result<Page, Error> {
         let title = truncate(&data, 20);
         let description = truncate(&data, 100);
 
@@ -20,11 +16,7 @@ impl Input for TextInput {
         })
     }
 
-    fn process_bytes(
-        &self,
-        _: Vec<u8>,
-        _: Option<&url::Url>,
-    ) -> Result<dalet::typed::Page, drova_sdk::Error> {
+    fn process_bytes(&self, _: Vec<u8>, _: Option<&url::Url>) -> Result<Page, Error> {
         Err(Error::UnsupportedInput)
     }
 }
