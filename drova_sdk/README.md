@@ -22,7 +22,7 @@ cargo add drova_sdk
 
 ```rust
 use dalet::types::{Page};
-use drova_sdk::requester::{Error, InputHandler};
+use drova_sdk::requester::{Error, InputHandler, RequesterBuilder};
 use async_trait::async_trait;
 use drova_sdk::requester::{Error, ProtocolHandler, Response};
 
