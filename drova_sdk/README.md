@@ -13,5 +13,5 @@ Absolute SDK for DROVA.
 ## Install
 
 ```bash
-cargo add drova_plugins
+cargo add drova_sdk
 ```
