@@ -1,6 +1,6 @@
 [package]
 name = "drova_plugins"
-version = "3.0.1"
+version = "3.0.2"
 edition = "2021"
 
 authors = ["artegoser"]
@@ -13,7 +13,7 @@ keywords = ["drova", "plugins"]
 categories = ["text-processing", "network-programming"]
 
 [dependencies]
-dalet = { version = "1.0.0-pre.33", features = [
+dalet = { version = "1.0.0-pre.34", features = [
   "types",
 ], default-features = false }
 url = "2.5.4"

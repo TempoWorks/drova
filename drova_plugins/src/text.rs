@@ -11,7 +11,7 @@ impl InputHandler for TextInput {
         Ok(Page {
             title: Some(title.into()),
             description: Some(description.into()),
-            body: vec![Tag::Preformatted { body: data.into() }],
+            body: vec![Tag::Mono { body: data.into() }],
             variables: None,
         })
     }

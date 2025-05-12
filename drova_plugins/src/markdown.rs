@@ -80,7 +80,7 @@ fn convert_node(
             body: convert_nodes(page, foot_count, footnotes, n.children)?.into(),
         }),
 
-        Node::Break(_) => Ok(Tag::LineBreak),
+        Node::Break(_) => Ok(Tag::Element { body: "\n".into() }),
 
         Node::InlineCode(n) => Ok(Tag::Element {
             body: n.value.into(),
