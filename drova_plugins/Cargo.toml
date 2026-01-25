@@ -26,3 +26,4 @@ mime = "0.3.17"
 
 async-trait = "0.1.88"
 markdown = "1.0.0"
+scraper = "0.22"
