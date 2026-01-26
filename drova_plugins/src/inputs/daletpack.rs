@@ -6,12 +6,10 @@ pub struct DaletpackInput;
 
 impl InputHandler for DaletpackInput {
     fn process_text(&self, _: String, _: Option<&url::Url>) -> Result<Page, Error> {
-        // Daletpack is a binary format, not text
         Err(Error::UnsupportedInput)
     }
 
     fn process_bytes(&self, data: Vec<u8>, _: Option<&url::Url>) -> Result<Page, Error> {
-        // First decompress, then deserialize
         let decompressed =
             daletpack::decompress(&data).map_err(|e| Error::ParserError(format!("{:?}", e)))?;
 
