@@ -34,7 +34,7 @@ fn main() {
 
 - [x] Http/s
 - [x] Gemini
-- [ ] Gopher
+- [x] Gopher
 
 # Supported inputs
 
