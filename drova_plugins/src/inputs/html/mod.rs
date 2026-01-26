@@ -5,7 +5,7 @@ use url::Url;
 
 mod convert;
 mod readability;
-mod scoring;
+pub mod scoring;
 
 pub use scoring::{
     LINK_DENSITY_THRESHOLD, MIN_CONTENT_LENGTH, MIN_PARAGRAPH_LENGTH, MIN_SCORE_THRESHOLD,

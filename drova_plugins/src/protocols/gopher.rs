@@ -72,6 +72,30 @@ impl ItemType {
         }
     }
 
+    /// Convert item type to character
+    pub fn to_char(&self) -> char {
+        match self {
+            ItemType::Text => '0',
+            ItemType::Directory => '1',
+            ItemType::CsoPhoneBook => '2',
+            ItemType::Error => '3',
+            ItemType::BinHex => '4',
+            ItemType::DosBinary => '5',
+            ItemType::UuEncoded => '6',
+            ItemType::Search => '7',
+            ItemType::Telnet => '8',
+            ItemType::Binary => '9',
+            ItemType::Redundant => '+',
+            ItemType::Tn3270 => 'T',
+            ItemType::Gif => 'g',
+            ItemType::Image => 'I',
+            ItemType::Html => 'h',
+            ItemType::Info => 'i',
+            ItemType::Sound => 's',
+            ItemType::Unknown(c) => *c,
+        }
+    }
+
     /// Get MIME type for this item type
     pub fn mime_type(&self) -> &'static str {
         match self {

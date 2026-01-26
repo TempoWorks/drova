@@ -5,7 +5,7 @@ use dalet::types::{
 use drova_sdk::requester::{Error, InputHandler};
 use url::Url;
 
-use super::protocol::ItemType;
+use crate::protocols::GopherItemType as ItemType;
 
 pub struct GophermapInput;
 
@@ -244,26 +244,7 @@ fn convert_entry(entry: &GophermapEntry, base_url: Option<&Url>) -> Option<Tag> 
 
 /// Build gopher URL from entry
 fn build_gopher_url(entry: &GophermapEntry, base_url: Option<&Url>) -> String {
-    let type_char = match entry.item_type {
-        ItemType::Text => '0',
-        ItemType::Directory => '1',
-        ItemType::CsoPhoneBook => '2',
-        ItemType::Error => '3',
-        ItemType::BinHex => '4',
-        ItemType::DosBinary => '5',
-        ItemType::UuEncoded => '6',
-        ItemType::Search => '7',
-        ItemType::Telnet => '8',
-        ItemType::Binary => '9',
-        ItemType::Redundant => '+',
-        ItemType::Tn3270 => 'T',
-        ItemType::Gif => 'g',
-        ItemType::Image => 'I',
-        ItemType::Html => 'h',
-        ItemType::Info => 'i',
-        ItemType::Sound => 's',
-        ItemType::Unknown(c) => c,
-    };
+    let type_char = entry.item_type.to_char();
 
     // Use entry's host/port, or fall back to base URL
     let (host, port) = if !entry.host.is_empty() {

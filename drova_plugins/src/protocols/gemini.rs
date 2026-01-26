@@ -1,5 +1,3 @@
-use std::str;
-
 use async_trait::async_trait;
 use drova_sdk::requester::{Error, ProtocolHandler, Response, ResponseData};
 use tokio_gemini::{certs::SelfsignedCertVerifier, LibError, StatusCode};

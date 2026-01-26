@@ -205,41 +205,8 @@ fn convert_element(
             })
         }
 
-        // === FUTURE MEDIA STUBS ===
-        // TODO: Uncomment when Dalet supports these types
-        //
-        // "video" => {
-        //     let src = get_attr(attrs, "src")
-        //         .or_else(|| find_source_src(children));
-        //     if let Some(src) = src {
-        //         let resolved = resolve_url(&src, base_url);
-        //         // return Some(Tag::Video { src: resolved, ... });
-        //     }
-        //     None
-        // }
-        //
-        // "audio" => {
-        //     let src = get_attr(attrs, "src")
-        //         .or_else(|| find_source_src(children));
-        //     if let Some(src) = src {
-        //         let resolved = resolve_url(&src, base_url);
-        //         // return Some(Tag::Audio { src: resolved, ... });
-        //     }
-        //     None
-        // }
-        //
-        // "iframe" => {
-        //     let src = get_attr(attrs, "src")?;
-        //     if is_video_embed(&src) {
-        //         let resolved = resolve_url(&src, base_url);
-        //         // return Some(Tag::Embed { src: resolved, ... });
-        //     }
-        //     None
-        // }
-        "video" | "audio" | "iframe" => {
-            // Currently unsupported, skip
-            None
-        }
+        // Media - currently unsupported
+        "video" | "audio" | "iframe" => None,
 
         // Lists
         "ul" => {
@@ -533,26 +500,3 @@ fn resolve_url(href: &str, base: Option<&Url>) -> String {
         None => href.to_string(),
     }
 }
-
-// === FUTURE MEDIA HELPERS ===
-// TODO: Uncomment when needed
-//
-// fn find_source_src(children: &[ContentNode]) -> Option<String> {
-//     for node in children {
-//         if let ContentNode::Element { tag, attrs, .. } = node {
-//             if tag == "source" {
-//                 if let Some(src) = get_attr(attrs, "src") {
-//                     return Some(src);
-//                 }
-//             }
-//         }
-//     }
-//     None
-// }
-//
-// fn is_video_embed(src: &str) -> bool {
-//     src.contains("youtube.com")
-//         || src.contains("youtu.be")
-//         || src.contains("vimeo.com")
-//         || src.contains("dailymotion.com")
-// }

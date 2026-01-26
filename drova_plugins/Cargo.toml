@@ -15,6 +15,7 @@ categories = ["text-processing", "network-programming"]
 [dependencies]
 dalet = { version = "1.0.0-pre.34", features = [
   "types",
+  "daletpack",
 ], default-features = false }
 url = "2.5.4"
 drova_sdk = { path = "../drova_sdk", version = "3.0.0" }

@@ -38,7 +38,7 @@ fn main() {
 
 # Supported inputs
 
-- [ ] application/daletpack
+- [x] application/daletpack
 - [x] text/plain, fallbacks to text/\*
 - [x] text/gemini
 - [x] text/markdown
