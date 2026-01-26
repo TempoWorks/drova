@@ -42,7 +42,7 @@ fn main() {
 - [x] text/plain, fallbacks to text/\*
 - [x] text/gemini
 - [x] text/markdown
-- [ ] text/html
+- [x] text/html
 
 # Supported outputs
 

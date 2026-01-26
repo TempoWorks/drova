@@ -3,7 +3,7 @@ use drova_sdk::requester::{Error, ProtocolHandler, Response, ResponseData};
 use mime::Mime;
 use reqwest::header::CONTENT_TYPE;
 
-use crate::utils::mime_to_str;
+use crate::utils::{decode_bytes, mime_to_str};
 
 pub struct HttpProtocol;
 
@@ -30,7 +30,10 @@ impl ProtocolHandler for HttpProtocol {
 
         match ty.starts_with("text") {
             true => Ok(Response {
-                data: ResponseData::TextOutput(res.text().await.map_err(match_reqwest_error)?),
+                data: ResponseData::TextOutput(
+                    decode_bytes(&res.bytes().await.map_err(match_reqwest_error)?.to_vec())
+                        .map_err(|e| Error::ParserError(e.to_string()))?,
+                ),
                 ty,
             }),
             false => Ok(Response {

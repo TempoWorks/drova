@@ -49,11 +49,8 @@ impl InputHandler for HtmlInput {
         Ok(page)
     }
 
-    fn process_bytes(&self, bytes: Vec<u8>, url: Option<&Url>) -> Result<Page, Error> {
-        let html =
-            readability::decode_html_bytes(&bytes).map_err(|e| Error::ParserError(e.to_string()))?;
-
-        self.process_text(html, url)
+    fn process_bytes(&self, _: Vec<u8>, _: Option<&Url>) -> Result<Page, Error> {
+        Err(Error::UnsupportedInput)
     }
 }
 
@@ -89,10 +86,7 @@ mod tests {
         let page = result.unwrap();
 
         assert_eq!(page.title, Some("Test Article".to_string()));
-        assert_eq!(
-            page.description,
-            Some("This is a test article".to_string())
-        );
+        assert_eq!(page.description, Some("This is a test article".to_string()));
         assert!(!page.body.is_empty());
     }
 

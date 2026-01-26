@@ -92,8 +92,30 @@ fn collect_nodes(element: ElementRef) -> Vec<ContentNode> {
         match child.value() {
             Node::Text(text) => {
                 let s = text.text.to_string();
-                if !s.trim().is_empty() {
-                    nodes.push(ContentNode::Text(s));
+                // Normalize whitespace: collapse multiple spaces/newlines to single space
+                // This matches HTML whitespace collapsing behavior
+                let normalized: String = s.split_whitespace().collect::<Vec<_>>().join(" ");
+
+                // Keep text nodes even if whitespace-only (important for inline spacing)
+                if normalized.is_empty() {
+                    // If original contained whitespace, preserve as single space
+                    if s.chars().any(|c| c.is_whitespace()) {
+                        nodes.push(ContentNode::Text(" ".to_string()));
+                    }
+                } else {
+                    // Preserve leading/trailing space if original had it
+                    let has_leading = s.starts_with(char::is_whitespace);
+                    let has_trailing = s.ends_with(char::is_whitespace);
+
+                    let mut result = String::new();
+                    if has_leading {
+                        result.push(' ');
+                    }
+                    result.push_str(&normalized);
+                    if has_trailing {
+                        result.push(' ');
+                    }
+                    nodes.push(ContentNode::Text(result));
                 }
             }
             Node::Element(el) => {
@@ -247,33 +269,4 @@ fn clean_title(title: &str) -> String {
     }
 
     title.to_string()
-}
-
-/// Decode HTML bytes to string, detecting encoding
-pub fn decode_html_bytes(bytes: &[u8]) -> Result<String, std::string::FromUtf8Error> {
-    // Check for BOM
-    if bytes.starts_with(&[0xEF, 0xBB, 0xBF]) {
-        // UTF-8 BOM
-        return String::from_utf8(bytes[3..].to_vec());
-    }
-    if bytes.starts_with(&[0xFF, 0xFE]) {
-        // UTF-16 LE - convert to UTF-8
-        let utf16: Vec<u16> = bytes[2..]
-            .chunks_exact(2)
-            .map(|c| u16::from_le_bytes([c[0], c[1]]))
-            .collect();
-        return Ok(String::from_utf16_lossy(&utf16));
-    }
-    if bytes.starts_with(&[0xFE, 0xFF]) {
-        // UTF-16 BE
-        let utf16: Vec<u16> = bytes[2..]
-            .chunks_exact(2)
-            .map(|c| u16::from_be_bytes([c[0], c[1]]))
-            .collect();
-        return Ok(String::from_utf16_lossy(&utf16));
-    }
-
-    // Try UTF-8, fallback to lossy
-    String::from_utf8(bytes.to_vec())
-        .or_else(|_| Ok(String::from_utf8_lossy(bytes).into_owned()))
 }

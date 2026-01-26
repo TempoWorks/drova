@@ -23,12 +23,13 @@ pub fn convert_to_dalet(
 fn convert_node(node: &ContentNode, base_url: Option<&Url>, page: &mut Page) -> Option<Tag> {
     match node {
         ContentNode::Text(s) => {
-            let trimmed = s.trim();
-            if trimmed.is_empty() {
+            // Whitespace is already normalized in readability.rs
+            // Just skip completely empty strings
+            if s.is_empty() {
                 None
             } else {
                 Some(Tag::Element {
-                    body: trimmed.to_string().into(),
+                    body: s.clone().into(),
                 })
             }
         }
