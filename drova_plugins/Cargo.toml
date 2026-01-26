@@ -1,6 +1,6 @@
 [package]
 name = "drova_plugins"
-version = "3.1.0-rc.2"
+version = "3.1.0-rc.3"
 edition = "2021"
 
 authors = ["artegoser"]
@@ -22,7 +22,9 @@ drova_sdk = { path = "../drova_sdk", version = "3.0.0" }
 tokio-gemini = { version = "0.5.2" }
 bytes = "1.10.1"
 
-reqwest = "0.13.1"
+reqwest = { version = "0.13.1", default-features = false, features = [
+  "rustls",
+] }
 mime = "0.3.17"
 
 async-trait = "0.1.88"
