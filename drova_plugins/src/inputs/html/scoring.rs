@@ -76,21 +76,8 @@ pub const NEGATIVE_PATTERNS: &[&str] = &[
 
 /// Tags to completely remove from DOM
 pub const TAGS_TO_REMOVE: &[&str] = &[
-    "script",
-    "style",
-    "noscript",
-    "iframe",
-    "form",
-    "button",
-    "input",
-    "select",
-    "textarea",
-    "svg",
-    "canvas",
-    "aside",
-    "nav",
-    "footer",
-    "header",
+    "script", "style", "noscript", "iframe", "form", "button", "input", "select", "textarea",
+    "svg", "canvas", "aside", "nav", "footer", "header",
 ];
 
 /// Base scores for different HTML tags

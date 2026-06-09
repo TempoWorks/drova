@@ -199,10 +199,7 @@ fn convert_element(
             let resolved = resolve_url(&src, base_url);
             let alt = get_attr(attrs, "alt");
 
-            Some(Tag::Image {
-                src: resolved,
-                alt,
-            })
+            Some(Tag::Image { src: resolved, alt })
         }
 
         // Media - currently unsupported
@@ -275,9 +272,7 @@ fn convert_element(
             if text.is_empty() {
                 None
             } else {
-                Some(Tag::Paragraph {
-                    body: text.into(),
-                })
+                Some(Tag::Paragraph { body: text.into() })
             }
         }
 
