@@ -34,15 +34,15 @@ fn main() {
 
 - [x] Http/s
 - [x] Gemini
-- [ ] Gopher
+- [x] Gopher
 
 # Supported inputs
 
-- [ ] application/daletpack
+- [x] application/daletpack
 - [x] text/plain, fallbacks to text/\*
 - [x] text/gemini
 - [x] text/markdown
-- [ ] text/html
+- [x] text/html
 
 # Supported outputs
 
