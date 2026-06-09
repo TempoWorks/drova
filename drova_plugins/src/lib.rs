@@ -1,10 +1,10 @@
 use drova_sdk::requester::RequesterBuilder;
-use inputs::{
-    DaletpackInput, GemtextInput, GophermapInput, HtmlInput, MarkdownInput, TextInput,
-};
+use inputs::{DaletpackInput, GemtextInput, GophermapInput, HtmlInput, MarkdownInput, TextInput};
+use outputs::{DaletpackOutput, HtmlOutput};
 use protocols::{GeminiProtocol, GopherProtocol, HttpProtocol};
 
 pub mod inputs;
+pub mod outputs;
 pub mod protocols;
 mod utils;
 
@@ -21,4 +21,6 @@ pub fn requester_plugins(app: RequesterBuilder) -> RequesterBuilder {
         .input("text/html", &HtmlInput)
         .input("text/plain", &TextInput)
         .input("text/*", &TextInput)
+        .output("application/daletpack", &DaletpackOutput)
+        .output("text/html", &HtmlOutput)
 }
