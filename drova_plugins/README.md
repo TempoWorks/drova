@@ -46,8 +46,8 @@ fn main() {
 
 # Supported outputs
 
-- [ ] daletpack
+- [x] application/daletpack
 - [ ] text
 - [ ] gemtext
 - [ ] markdown
-- [ ] html
+- [x] text/html

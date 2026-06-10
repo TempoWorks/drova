@@ -118,7 +118,11 @@ impl ItemType {
     pub fn is_text(&self) -> bool {
         matches!(
             self,
-            ItemType::Text | ItemType::Directory | ItemType::Html | ItemType::Error | ItemType::Info
+            ItemType::Text
+                | ItemType::Directory
+                | ItemType::Html
+                | ItemType::Error
+                | ItemType::Info
         )
     }
 }

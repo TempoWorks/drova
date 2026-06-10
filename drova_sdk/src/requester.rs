@@ -76,11 +76,21 @@ pub trait InputHandler: Send + Sync {
     fn process_bytes(&self, b: Vec<u8>, url: Option<&Url>) -> Result<Page, Error>;
 }
 
+pub enum OutputData {
+    Text(String),
+    Bytes(Vec<u8>),
+}
+
+pub trait OutputHandler: Send + Sync {
+    fn process_page(&self, page: Page) -> Result<OutputData, Error>;
+}
+
 /// Requester is system for extracting dalet from anything,
 /// through protocol and input handlers
 pub struct Requester<'a> {
     protocols: IndexMap<String, &'a dyn ProtocolHandler>,
     inputs: IndexMap<String, &'a dyn InputHandler>,
+    outputs: IndexMap<String, &'a dyn OutputHandler>,
 }
 
 impl Default for Requester<'_> {
@@ -88,11 +98,24 @@ impl Default for Requester<'_> {
         Self {
             protocols: IndexMap::new(),
             inputs: IndexMap::new(),
+            outputs: IndexMap::new(),
         }
     }
 }
 
 impl<'a> Requester<'a> {
+    pub fn protocols(&self) -> impl Iterator<Item = &str> {
+        self.protocols.keys().map(String::as_str)
+    }
+
+    pub fn inputs(&self) -> impl Iterator<Item = &str> {
+        self.inputs.keys().map(String::as_str)
+    }
+
+    pub fn outputs(&self) -> impl Iterator<Item = &str> {
+        self.outputs.keys().map(String::as_str)
+    }
+
     /// Process url and get dalet page
     pub async fn process(&self, url: &str) -> Result<Page, Error> {
         use ResponseData::*;
@@ -160,6 +183,18 @@ impl<'a> Requester<'a> {
             .ok_or(Error::UnsupportedInput)?
             .process_bytes(bytes, None)
     }
+
+    /// Process dalet page with output type and get rendered output
+    pub fn process_output(&self, output_type: &str, page: Page) -> Result<OutputData, Error> {
+        self.outputs
+            .get(output_type)
+            .or_else(|| {
+                self.outputs
+                    .get(self.outputs.keys().find(|p| glob_match(p, output_type))?)
+            })
+            .ok_or(Error::UnsupportedInput)?
+            .process_page(page)
+    }
 }
 
 impl From<url::ParseError> for Error {
@@ -195,6 +230,11 @@ impl<'a> RequesterBuilder<'a> {
 
     pub fn input(mut self, ty: &'a str, input: &'a dyn InputHandler) -> Self {
         self.core.inputs.insert(ty.into(), input);
+        self
+    }
+
+    pub fn output(mut self, ty: &'a str, output: &'a dyn OutputHandler) -> Self {
+        self.core.outputs.insert(ty.into(), output);
         self
     }
 

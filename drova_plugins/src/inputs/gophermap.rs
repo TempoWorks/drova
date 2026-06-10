@@ -93,10 +93,7 @@ fn parse_gophermap_line(line: &str) -> GophermapEntry<'_> {
     let display = parts.first().copied().unwrap_or("");
     let selector = parts.get(1).copied().unwrap_or("");
     let host = parts.get(2).copied().unwrap_or("");
-    let port = parts
-        .get(3)
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(70);
+    let port = parts.get(3).and_then(|p| p.parse().ok()).unwrap_or(70);
 
     GophermapEntry {
         item_type: ItemType::from_char(type_char),
@@ -261,7 +258,10 @@ fn build_gopher_url(entry: &GophermapEntry, base_url: Option<&Url>) -> String {
     if port == 70 {
         format!("gopher://{}/{}/{}", host, type_char, entry.selector)
     } else {
-        format!("gopher://{}:{}/{}/{}", host, port, type_char, entry.selector)
+        format!(
+            "gopher://{}:{}/{}/{}",
+            host, port, type_char, entry.selector
+        )
     }
 }
 
