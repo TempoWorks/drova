@@ -104,6 +104,18 @@ impl Default for Requester<'_> {
 }
 
 impl<'a> Requester<'a> {
+    pub fn protocols(&self) -> impl Iterator<Item = &str> {
+        self.protocols.keys().map(String::as_str)
+    }
+
+    pub fn inputs(&self) -> impl Iterator<Item = &str> {
+        self.inputs.keys().map(String::as_str)
+    }
+
+    pub fn outputs(&self) -> impl Iterator<Item = &str> {
+        self.outputs.keys().map(String::as_str)
+    }
+
     /// Process url and get dalet page
     pub async fn process(&self, url: &str) -> Result<Page, Error> {
         use ResponseData::*;
