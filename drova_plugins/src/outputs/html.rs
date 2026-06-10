@@ -12,18 +12,6 @@ impl OutputHandler for HtmlOutput {
 fn render_page(page: &Page) -> String {
     let mut out = String::new();
 
-    if let Some(title) = &page.title {
-        out.push_str("<h1>");
-        push_escaped(&mut out, title);
-        out.push_str("</h1>\n");
-    }
-
-    if let Some(description) = &page.description {
-        out.push_str("<p class=\"description\">");
-        push_escaped(&mut out, description);
-        out.push_str("</p>\n");
-    }
-
     for tag in &page.body {
         render_tag(&mut out, tag);
         out.push('\n');
