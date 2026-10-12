@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::registry::Registry;
+use crate::requests::{FetchContext, FetchFuture, RequestInfo, RequestRules, Source};
 use crate::sites::{
     RequestContext, SiteHandler, SiteOutcome, SiteRegistration, UrlFacts, UrlIndex, UrlMatcher,
 };
@@ -72,6 +73,18 @@ pub enum ResponseData {
 #[async_trait]
 pub trait ProtocolHandler: Send + Sync {
     async fn fetch(&self, url: &Url) -> Result<Response, Error>;
+
+    fn fetch_with_context<'s>(
+        &'s self,
+        url: &'s Url,
+        _: &'s FetchContext<'_, '_>,
+    ) -> FetchFuture<'s> {
+        self.fetch(url)
+    }
+
+    fn source_name(&self) -> &'static str {
+        std::any::type_name::<Self>()
+    }
 }
 
 pub trait InputHandler: Send + Sync {
@@ -96,6 +109,7 @@ pub struct Requester<'a> {
     outputs: Registry<'a, dyn OutputHandler + 'a>,
     sites: Vec<SiteRegistration<'a>>,
     site_index: UrlIndex,
+    pub(crate) rules: RequestRules<'a>,
 }
 
 impl Default for Requester<'_> {
@@ -106,6 +120,7 @@ impl Default for Requester<'_> {
             outputs: Registry::default(),
             sites: Vec::new(),
             site_index: UrlIndex::default(),
+            rules: RequestRules::default(),
         }
     }
 }
@@ -132,6 +147,7 @@ impl<'a> Requester<'a> {
         for id in self.site_index.candidates(&facts) {
             let site = &self.sites[id];
             if site.matcher.matches_facts(&facts) {
+                ctx.set_source(site.handler.source_name());
                 match site.handler.process(&mut ctx).await? {
                     SiteOutcome::Parsed(page) => return Ok(page),
                     SiteOutcome::Fallback => continue,
@@ -144,6 +160,14 @@ impl<'a> Requester<'a> {
 
     /// Fetch through protocol handlers without invoking site adapters or parsers.
     pub async fn fetch(&self, url: &Url) -> Result<Response, Error> {
+        self.fetch_from(url, None).await
+    }
+
+    pub(crate) async fn fetch_from(
+        &self,
+        url: &Url,
+        parent: Option<&Source<'_>>,
+    ) -> Result<Response, Error> {
         let scheme = url.scheme();
 
         let protocol = self
@@ -151,7 +175,14 @@ impl<'a> Requester<'a> {
             .matching(scheme)
             .ok_or(Error::UnsupportedProtocol)?;
 
-        protocol.fetch(url).await
+        let ctx = FetchContext {
+            requester: self,
+            source: Source {
+                name: protocol.source_name(),
+                parent,
+            },
+        };
+        protocol.fetch_with_context(url, &ctx).await
     }
 
     /// Parse a fetched response using exact MIME matching, then registered globs.
@@ -237,6 +268,15 @@ impl<'a> RequesterBuilder<'a> {
         self
     }
 
+    pub fn request_rule<R: 'static>(
+        mut self,
+        matcher: UrlMatcher,
+        modify: impl Fn(&RequestInfo<'_>, R) -> R + Send + Sync + 'a,
+    ) -> Self {
+        self.core.rules.insert(matcher, modify);
+        self
+    }
+
     pub fn input(mut self, ty: &'a str, input: &'a dyn InputHandler) -> Self {
         self.core.inputs.insert(ty.into(), input);
         self
@@ -249,6 +289,7 @@ impl<'a> RequesterBuilder<'a> {
 
     pub fn build(mut self) -> Requester<'a> {
         self.core.site_index = UrlIndex::build(self.core.sites.iter().map(|site| &site.matcher));
+        self.core.rules.build();
         self.core
     }
 }

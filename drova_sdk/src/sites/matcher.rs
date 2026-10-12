@@ -1,6 +1,6 @@
 use super::UrlFacts;
 use crate::patterns::Patterns;
-use url::{Origin, Url};
+use url::{Host, Origin, Url};
 
 /// Fields are ANDed; alternatives within schemes, hosts, and paths are ORed.
 /// Schemes, hosts, and paths accept globs. Unspecified fields impose no restriction.
@@ -63,10 +63,20 @@ impl UrlMatcher {
         self.schemes.matches(facts.url.scheme())
             && (self.hosts.is_empty()
                 || facts.host.as_deref().is_some_and(|h| self.hosts.matches(h)))
-            && self
-                .origin
-                .as_ref()
-                .is_none_or(|origin| origin.is_tuple() && origin == facts.origin())
+            && self.origin.as_ref().is_none_or(|origin| match origin {
+                Origin::Tuple(scheme, host, port) if facts.url.scheme() != "blob" => {
+                    scheme == facts.url.scheme()
+                        && Some(*port) == facts.url.port_or_known_default()
+                        && match (host, facts.url.host()) {
+                            (Host::Domain(a), Some(Host::Domain(b))) => a == b,
+                            (Host::Ipv4(a), Some(Host::Ipv4(b))) => *a == b,
+                            (Host::Ipv6(a), Some(Host::Ipv6(b))) => *a == b,
+                            _ => false,
+                        }
+                }
+                Origin::Tuple(..) => origin == facts.origin(),
+                _ => false,
+            })
             && self.paths.matches(facts.url.path())
             && self.query_keys.iter().all(|key| facts.has_query(key))
     }

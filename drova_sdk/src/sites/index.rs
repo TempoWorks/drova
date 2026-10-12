@@ -48,6 +48,7 @@ impl<'u> UrlFacts<'u> {
 /// Candidate lists retain registration order and are merged without duplicates.
 #[derive(Default)]
 pub(crate) struct UrlIndex {
+    small: Option<usize>,
     exact: HashMap<String, Vec<usize>>,
     suffix: HashMap<String, Vec<usize>>,
     general: Vec<usize>,
@@ -55,8 +56,16 @@ pub(crate) struct UrlIndex {
 
 impl UrlIndex {
     pub fn build<'a>(matchers: impl IntoIterator<Item = &'a UrlMatcher>) -> Self {
+        let matchers = matchers.into_iter();
+        let (min, max) = matchers.size_hint();
+        if max == Some(min) && min <= 4 {
+            return Self {
+                small: Some(min),
+                ..Self::default()
+            };
+        }
         let mut index = Self::default();
-        for (id, matcher) in matchers.into_iter().enumerate() {
+        for (id, matcher) in matchers.enumerate() {
             if let Some(origin) = &matcher.origin {
                 if let Origin::Tuple(_, host, _) = origin {
                     index
@@ -94,8 +103,20 @@ impl UrlIndex {
 
     pub fn candidates<'a>(&'a self, facts: &UrlFacts<'_>) -> Candidates<'a> {
         let mut candidates = Candidates::default();
+        if let Some(count) = self.small {
+            candidates.linear = 0..count;
+            return candidates;
+        }
         candidates.push(&self.general);
-        if let Some(host) = facts.host.as_deref() {
+        let blob_host = if facts.host.is_none() && facts.url.scheme() == "blob" {
+            match facts.origin() {
+                Origin::Tuple(_, host, _) => Some(host.to_string()),
+                _ => None,
+            }
+        } else {
+            None
+        };
+        if let Some(host) = facts.host.as_deref().or(blob_host.as_deref()) {
             if let Some(ids) = self.exact.get(host) {
                 candidates.push(ids);
             }
@@ -114,6 +135,7 @@ impl UrlIndex {
 #[derive(Default)]
 pub(crate) struct Candidates<'a> {
     lists: SmallVec<[&'a [usize]; 4]>,
+    linear: std::ops::Range<usize>,
 }
 
 impl<'a> Candidates<'a> {
@@ -127,6 +149,15 @@ impl<'a> Candidates<'a> {
 impl Iterator for Candidates<'_> {
     type Item = usize;
     fn next(&mut self) -> Option<usize> {
+        if self.lists.is_empty() {
+            return self.linear.next();
+        }
+        if self.lists.len() == 1 {
+            let ids = &mut self.lists[0];
+            let id = *ids.first()?;
+            *ids = &ids[1..];
+            return Some(id);
+        }
         let id = self
             .lists
             .iter()
@@ -179,6 +210,7 @@ mod tests {
             "https://host999.example.net/",
             "https://sub.host999.example.net/",
             "https://b.example.org/?q=hello",
+            "blob:https://example.org/identifier",
         ] {
             let url = Url::parse(raw).unwrap();
             let facts = UrlFacts::new(&url);
