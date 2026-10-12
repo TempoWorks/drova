@@ -22,6 +22,7 @@ async-trait = "0.1.88"
 indexmap = '2.9.0'
 
 glob-match = "0.2.1"
+smallvec = "1"
 
 serde = { version = "1", features = ["derive"] }
 

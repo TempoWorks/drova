@@ -1,11 +1,12 @@
 use async_trait::async_trait;
 use dalet::types::Page;
-use glob_match::glob_match;
-use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::sites::{RequestContext, SiteHandler, SiteOutcome, SiteRegistration, UrlMatcher};
+use crate::registry::Registry;
+use crate::sites::{
+    RequestContext, SiteHandler, SiteOutcome, SiteRegistration, UrlFacts, UrlIndex, UrlMatcher,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Error {
@@ -90,34 +91,36 @@ pub trait OutputHandler: Send + Sync {
 /// Requester is system for extracting dalet from anything,
 /// through protocol and input handlers
 pub struct Requester<'a> {
-    protocols: IndexMap<String, &'a dyn ProtocolHandler>,
-    inputs: IndexMap<String, &'a dyn InputHandler>,
-    outputs: IndexMap<String, &'a dyn OutputHandler>,
+    protocols: Registry<'a, dyn ProtocolHandler + 'a>,
+    inputs: Registry<'a, dyn InputHandler + 'a>,
+    outputs: Registry<'a, dyn OutputHandler + 'a>,
     sites: Vec<SiteRegistration<'a>>,
+    site_index: UrlIndex,
 }
 
 impl Default for Requester<'_> {
     fn default() -> Self {
         Self {
-            protocols: IndexMap::new(),
-            inputs: IndexMap::new(),
-            outputs: IndexMap::new(),
+            protocols: Registry::default(),
+            inputs: Registry::default(),
+            outputs: Registry::default(),
             sites: Vec::new(),
+            site_index: UrlIndex::default(),
         }
     }
 }
 
 impl<'a> Requester<'a> {
     pub fn protocols(&self) -> impl Iterator<Item = &str> {
-        self.protocols.keys().map(String::as_str)
+        self.protocols.keys()
     }
 
     pub fn inputs(&self) -> impl Iterator<Item = &str> {
-        self.inputs.keys().map(String::as_str)
+        self.inputs.keys()
     }
 
     pub fn outputs(&self) -> impl Iterator<Item = &str> {
-        self.outputs.keys().map(String::as_str)
+        self.outputs.keys()
     }
 
     /// Process url and get dalet page
@@ -125,8 +128,10 @@ impl<'a> Requester<'a> {
         let url = Url::parse(url)?;
         let mut ctx = RequestContext::new(self, &url);
 
-        for site in &self.sites {
-            if site.matcher.matches(&url) {
+        let facts = UrlFacts::new(&url);
+        for id in self.site_index.candidates(&facts) {
+            let site = &self.sites[id];
+            if site.matcher.matches_facts(&facts) {
                 match site.handler.process(&mut ctx).await? {
                     SiteOutcome::Parsed(page) => return Ok(page),
                     SiteOutcome::Fallback => continue,
@@ -143,11 +148,7 @@ impl<'a> Requester<'a> {
 
         let protocol = self
             .protocols
-            .get(scheme)
-            .or_else(|| {
-                self.protocols
-                    .get(self.protocols.keys().find(|p| glob_match(&p, scheme))?)
-            })
+            .matching(scheme)
             .ok_or(Error::UnsupportedProtocol)?;
 
         protocol.fetch(url).await
@@ -159,11 +160,7 @@ impl<'a> Requester<'a> {
 
         let input = self
             .inputs
-            .get(&resp.ty)
-            .or_else(|| {
-                self.inputs
-                    .get(self.inputs.keys().find(|p| glob_match(&p, &resp.ty))?)
-            })
+            .matching(&resp.ty)
             .ok_or(Error::UnsupportedInput)?;
 
         match resp.data {
@@ -181,7 +178,7 @@ impl<'a> Requester<'a> {
     /// Process text with input type and get dalet page
     pub fn process_text(&self, input_type: &str, text: String) -> Result<Page, Error> {
         self.inputs
-            .get(input_type)
+            .exact(input_type)
             .ok_or(Error::UnsupportedInput)?
             .process_text(text, None)
     }
@@ -189,7 +186,7 @@ impl<'a> Requester<'a> {
     /// Process bytes with input type and get dalet page
     pub fn process_bytes(&self, input_type: &str, bytes: Vec<u8>) -> Result<Page, Error> {
         self.inputs
-            .get(input_type)
+            .exact(input_type)
             .ok_or(Error::UnsupportedInput)?
             .process_bytes(bytes, None)
     }
@@ -197,11 +194,7 @@ impl<'a> Requester<'a> {
     /// Process dalet page with output type and get rendered output
     pub fn process_output(&self, output_type: &str, page: Page) -> Result<OutputData, Error> {
         self.outputs
-            .get(output_type)
-            .or_else(|| {
-                self.outputs
-                    .get(self.outputs.keys().find(|p| glob_match(p, output_type))?)
-            })
+            .matching(output_type)
             .ok_or(Error::UnsupportedInput)?
             .process_page(page)
     }
@@ -254,7 +247,8 @@ impl<'a> RequesterBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> Requester<'a> {
+    pub fn build(mut self) -> Requester<'a> {
+        self.core.site_index = UrlIndex::build(self.core.sites.iter().map(|site| &site.matcher));
         self.core
     }
 }

@@ -1,7 +1,9 @@
 //! URL-selected adapters that run before generic MIME parsers.
 
 mod context;
+mod index;
 mod matcher;
+pub(crate) use index::{UrlFacts, UrlIndex};
 
 pub use context::RequestContext;
 pub use matcher::UrlMatcher;
