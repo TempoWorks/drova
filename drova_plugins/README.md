@@ -21,12 +21,28 @@ cargo add drova_plugins
 ## Example
 
 ```rust
-use drova_sdk::RequesterBuilder;
-use drova_plugins::requester_plugins;
+use drova_sdk::{requester::{Error, RequesterBuilder}, sites::UrlMatcher};
+use drova_plugins::{requester_plugins, searx_plugin, sites::SearxngSite};
 
-fn main() {
-  let requester = RequesterBuilder::default().plugin(requester_plugins).build();
-  println!("{:#?}", requester.process("gemini://example.com"))
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Error> {
+  let site = SearxngSite::new();
+  let requester = RequesterBuilder::default()
+      .plugin(requester_plugins)
+      .plugin(searx_plugin)
+      .site(
+          UrlMatcher::new()
+              .schemes(["http", "https"])
+              .hosts(["search.example.com"])
+              .paths(["/", "/search"])
+              .require_query("q"),
+          &site,
+      )
+      .build();
+
+  println!("{:#?}", requester.process("searx://search.example.com?q=Hello").await?);
+  println!("{:#?}", requester.process("https://search.example.com/search?q=Hello").await?);
+  Ok(())
 }
 ```
 
@@ -35,6 +51,7 @@ fn main() {
 - [x] Http/s
 - [x] Gemini
 - [x] Gopher
+- [x] SearXNG (`searx`, `searx+https`: HTTPS; `searx+http`: HTTP)
 
 # Supported inputs
 
@@ -43,6 +60,7 @@ fn main() {
 - [x] text/gemini
 - [x] text/markdown
 - [x] text/html
+- [x] application/x-searxng+json
 
 # Supported outputs
 

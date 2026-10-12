@@ -21,10 +21,9 @@ cargo add drova_sdk
 ## Example
 
 ```rust
-use dalet::types::{Page};
-use drova_sdk::requester::{Error, InputHandler, RequesterBuilder};
+use dalet::types::Page;
+use drova_sdk::requester::{Error, InputHandler, ProtocolHandler, RequesterBuilder, Response};
 use async_trait::async_trait;
-use drova_sdk::requester::{Error, ProtocolHandler, Response};
 
 pub struct HttpProtocol;
 
@@ -47,7 +46,8 @@ impl InputHandler for TextInput {
     }
 }
 
-fn main() {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Error> {
   let requester = RequesterBuilder::default()
         .protocol("http", &HttpProtocol)
         .protocol("https", &HttpProtocol)
@@ -55,6 +55,7 @@ fn main() {
         .input("text/*", &TextInput)
         .build();
 
-  println!("{:#?}", requester.process("http://example.com"))
+  println!("{:#?}", requester.process("http://example.com").await?);
+  Ok(())
 }
 ```
