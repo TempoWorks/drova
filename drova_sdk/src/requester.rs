@@ -5,6 +5,8 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::sites::{RequestContext, SiteHandler, SiteOutcome, SiteRegistration, UrlMatcher};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Error {
     GetInput,
@@ -91,6 +93,7 @@ pub struct Requester<'a> {
     protocols: IndexMap<String, &'a dyn ProtocolHandler>,
     inputs: IndexMap<String, &'a dyn InputHandler>,
     outputs: IndexMap<String, &'a dyn OutputHandler>,
+    sites: Vec<SiteRegistration<'a>>,
 }
 
 impl Default for Requester<'_> {
@@ -99,6 +102,7 @@ impl Default for Requester<'_> {
             protocols: IndexMap::new(),
             inputs: IndexMap::new(),
             outputs: IndexMap::new(),
+            sites: Vec::new(),
         }
     }
 }
@@ -118,10 +122,23 @@ impl<'a> Requester<'a> {
 
     /// Process url and get dalet page
     pub async fn process(&self, url: &str) -> Result<Page, Error> {
-        use ResponseData::*;
-
         let url = Url::parse(url)?;
+        let mut ctx = RequestContext::new(self, &url);
 
+        for site in &self.sites {
+            if site.matcher.matches(&url) {
+                match site.handler.process(&mut ctx).await? {
+                    SiteOutcome::Parsed(page) => return Ok(page),
+                    SiteOutcome::Fallback => continue,
+                }
+            }
+        }
+
+        self.parse_response(ctx.into_original_response().await?, Some(&url))
+    }
+
+    /// Fetch through protocol handlers without invoking site adapters or parsers.
+    pub async fn fetch(&self, url: &Url) -> Result<Response, Error> {
         let scheme = url.scheme();
 
         let protocol = self
@@ -133,7 +150,12 @@ impl<'a> Requester<'a> {
             })
             .ok_or(Error::UnsupportedProtocol)?;
 
-        let resp = protocol.fetch(&url).await?;
+        protocol.fetch(url).await
+    }
+
+    /// Parse a fetched response using exact MIME matching, then registered globs.
+    pub fn parse_response(&self, resp: Response, url: Option<&Url>) -> Result<Page, Error> {
+        use ResponseData::*;
 
         let input = self
             .inputs
@@ -145,27 +167,15 @@ impl<'a> Requester<'a> {
             .ok_or(Error::UnsupportedInput)?;
 
         match resp.data {
-            TextOutput(s) => input.process_text(s, Some(&url)),
-            BitsOutput(b) => input.process_bytes(b, Some(&url)),
+            TextOutput(s) => input.process_text(s, url),
+            BitsOutput(b) => input.process_bytes(b, url),
         }
     }
 
     /// Process url and get response from protocol handler
     pub async fn process_request(&self, url: &str) -> Result<Response, Error> {
         let url = Url::parse(url)?;
-
-        let scheme = url.scheme();
-
-        let protocol = self
-            .protocols
-            .get(scheme)
-            .or_else(|| {
-                self.protocols
-                    .get(self.protocols.keys().find(|p| glob_match(&p, scheme))?)
-            })
-            .ok_or(Error::UnsupportedProtocol)?;
-
-        protocol.fetch(&url).await
+        self.fetch(&url).await
     }
 
     /// Process text with input type and get dalet page
@@ -218,13 +228,19 @@ impl Default for RequesterBuilder<'_> {
 impl<'a> RequesterBuilder<'a> {
     pub fn plugin<R>(self, registrar: R) -> Self
     where
-        R: Fn(RequesterBuilder) -> RequesterBuilder,
+        R: FnOnce(RequesterBuilder<'a>) -> RequesterBuilder<'a>,
     {
         registrar(self)
     }
 
     pub fn protocol(mut self, schema: &'a str, protocol: &'a dyn ProtocolHandler) -> Self {
         self.core.protocols.insert(schema.into(), protocol);
+        self
+    }
+
+    /// Try matching site adapters in registration order before MIME parsing.
+    pub fn site(mut self, matcher: UrlMatcher, handler: &'a dyn SiteHandler) -> Self {
+        self.core.sites.push(SiteRegistration { matcher, handler });
         self
     }
 
