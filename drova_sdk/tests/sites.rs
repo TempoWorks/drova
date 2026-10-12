@@ -82,7 +82,13 @@ async fn api_adapter_skips_original_and_mime_parser() {
     let protocol = Protocol::default();
     let requester = RequesterBuilder::default()
         .protocol("https", &protocol)
-        .site(UrlMatcher::new().hosts(["example.org"]), &ApiSite)
+        .site(
+            UrlMatcher::new()
+                .schemes(["http*"])
+                .hosts(["example.*"])
+                .paths(["/search*"]),
+            &ApiSite,
+        )
         .build();
     let result = requester
         .process("https://example.org/search?q=rust")
@@ -187,6 +193,60 @@ fn matcher_handles_path_globs_and_effective_origin_ports() {
     assert!(!matcher.matches(&Url::parse("http://example.org/org/repo/issues/42").unwrap()));
     let opaque = Url::parse("searx://example.org").unwrap();
     assert!(!UrlMatcher::new().origin(&opaque).matches(&opaque));
+}
+
+#[test]
+fn matcher_accepts_globs_in_schemes_hosts_and_paths() {
+    let matcher = UrlMatcher::new()
+        .schemes(["HTTP*", "searx+*"])
+        .hosts(["*.EXAMPLE.ORG", "example.net"])
+        .paths(["/articles/*", "/search"])
+        .require_query("q");
+    for raw in [
+        "http://search.example.org/search?q=a",
+        "https://search.example.org/articles/42?q=a",
+        "https://example.net/search?q=a",
+        "searx+http://SEARCH.EXAMPLE.ORG/search?q=a",
+    ] {
+        assert!(matcher.matches(&Url::parse(raw).unwrap()), "{raw}");
+    }
+    for raw in [
+        "ftp://search.example.org/search?q=a",
+        "https://example.org/search?q=a",
+        "https://search.example.org.evil/search?q=a",
+        "https://search.example.org/Articles/42?q=a",
+        "https://search.example.org/search",
+        "file:///articles/42?q=a",
+    ] {
+        assert!(!matcher.matches(&Url::parse(raw).unwrap()), "{raw}");
+    }
+}
+
+#[test]
+fn path_glob_is_an_alternative_to_paths_and_cannot_override_origin() {
+    let origin = Url::parse("https://example.org/").unwrap();
+    let matcher = UrlMatcher::new()
+        .origin(&origin)
+        .schemes(["*"])
+        .hosts(["*"])
+        .paths(["/articles/*"])
+        .path_glob("/search*");
+    for raw in [
+        "https://example.org/articles/42",
+        "https://example.org/search",
+    ] {
+        assert!(matcher.matches(&Url::parse(raw).unwrap()));
+    }
+    assert!(!matcher.matches(&Url::parse("https://other.org/search").unwrap()));
+    assert!(!matcher.matches(&Url::parse("http://example.org/search").unwrap()));
+    assert!(UrlMatcher::new().matches(&Url::parse("https://other.org/anything").unwrap()));
+}
+
+#[test]
+fn exact_ipv6_hosts_and_paths_with_glob_syntax_still_match() {
+    let matcher = UrlMatcher::new().hosts(["[::1]"]).paths(["/article[1]"]);
+    assert!(matcher.matches(&Url::parse("http://[::1]/article[1]").unwrap()));
+    assert!(!matcher.matches(&Url::parse("http://[::2]/article[1]").unwrap()));
 }
 
 #[tokio::test]

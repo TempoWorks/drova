@@ -32,8 +32,8 @@ async fn main() -> Result<(), Error> {
       .plugin(searx_plugin)
       .site(
           UrlMatcher::new()
-              .schemes(["http", "https"])
-              .hosts(["search.example.com"])
+              .schemes(["http*"])
+              .hosts(["search.example.com", "*.search.example.com"])
               .paths(["/", "/search"])
               .require_query("q"),
           &site,
