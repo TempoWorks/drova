@@ -52,10 +52,15 @@ struct SearchResult {
 }
 
 fn decode(bytes: &[u8]) -> Result<Option<SearchResponse>, Error> {
-    let value = serde_json::from_slice::<serde_json::Value>(bytes)
-        .map_err(|e| Error::ParserError(e.to_string()))?;
-    // Valid JSON belonging to another API is an explicit adapter mismatch.
-    Ok(serde_json::from_value(value).ok())
+    match serde_json::from_slice(bytes) {
+        Ok(search) => Ok(Some(search)),
+        Err(error) if error.is_data() => {
+            serde_json::from_slice::<serde::de::IgnoredAny>(bytes)
+                .map_err(|error| Error::ParserError(error.to_string()))?;
+            Ok(None)
+        }
+        Err(error) => Err(Error::ParserError(error.to_string())),
+    }
 }
 
 fn bytes(response: &Response) -> &[u8] {
@@ -79,11 +84,21 @@ pub(crate) fn prepare_response(mut response: Response) -> Result<Option<Response
 pub(crate) fn parse_response(bytes: &[u8]) -> Result<Page, Error> {
     let search =
         decode(bytes)?.ok_or_else(|| Error::ParserError("Unsupported SearXNG response".into()))?;
-    let mut body = Vec::new();
+    Ok(convert_search(search))
+}
+
+pub(crate) fn parse_site_response(response: &Response) -> Result<Option<Page>, Error> {
+    if response.ty != "application/json" && response.ty != SEARXNG_JSON {
+        return Ok(None);
+    }
+    Ok(decode(bytes(response))?.map(convert_search))
+}
+
+fn convert_search(search: SearchResponse) -> Page {
+    let mut body = Vec::with_capacity(search.results.len() * 2);
     for result in search.results {
         let title = result
             .title
-            .as_deref()
             .map(plain_text)
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| result.url.clone());
@@ -95,7 +110,7 @@ pub(crate) fn parse_response(bytes: &[u8]) -> Result<Page, Error> {
             .into(),
         });
         if let Some(content) = result.content {
-            let content = plain_text(&content);
+            let content = plain_text(content);
             if !content.is_empty() {
                 body.push(Tag::Paragraph {
                     body: content.into(),
@@ -103,16 +118,19 @@ pub(crate) fn parse_response(bytes: &[u8]) -> Result<Page, Error> {
             }
         }
     }
-    Ok(Page {
+    Page {
         title: Some(format!("SearXNG: {}", search.query)),
         description: None,
         body,
         variables: None,
-    })
+    }
 }
 
-fn plain_text(html: &str) -> String {
-    Html::parse_fragment(html)
+fn plain_text(html: String) -> String {
+    if !html.contains(['<', '&']) {
+        return html;
+    }
+    Html::parse_fragment(&html)
         .root_element()
         .text()
         .collect::<String>()

@@ -63,17 +63,23 @@ impl Server {
                     assert!(count > 0);
                     request.extend_from_slice(&buffer[..count]);
                 }
-                let request = String::from_utf8(request).unwrap();
-                recorded.lock().unwrap().push(
-                    request
-                        .lines()
-                        .next()
-                        .unwrap()
-                        .split_whitespace()
-                        .nth(1)
-                        .unwrap()
-                        .to_owned(),
-                );
+                let header_end = request.windows(4).position(|w| w == b"\r\n\r\n").unwrap() + 4;
+                let headers = String::from_utf8_lossy(&request[..header_end]);
+                let body_len = headers
+                    .lines()
+                    .filter_map(|line| line.split_once(':'))
+                    .find(|(name, _)| name.eq_ignore_ascii_case("content-length"))
+                    .map(|(_, value)| value.trim().parse::<usize>().unwrap())
+                    .unwrap_or(0);
+                while request.len() < header_end + body_len {
+                    let count = socket.read(&mut buffer).await.unwrap();
+                    assert!(count > 0);
+                    request.extend_from_slice(&buffer[..count]);
+                }
+                recorded
+                    .lock()
+                    .unwrap()
+                    .push(String::from_utf8(request).unwrap());
                 let reply = replies.pop_front().unwrap_or_else(|| Reply::error(500));
                 let response = format!("HTTP/1.1 {} Test\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", reply.status, reply.mime, reply.body.len(), reply.body);
                 socket.write_all(response.as_bytes()).await.unwrap();
@@ -87,6 +93,25 @@ impl Server {
     }
 
     pub fn requests(&self) -> Vec<String> {
+        self.requests
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|request| {
+                request
+                    .lines()
+                    .next()
+                    .unwrap()
+                    .split_whitespace()
+                    .nth(1)
+                    .unwrap()
+                    .to_owned()
+            })
+            .collect()
+    }
+
+    #[allow(dead_code)]
+    pub fn raw_requests(&self) -> Vec<String> {
         self.requests.lock().unwrap().clone()
     }
 

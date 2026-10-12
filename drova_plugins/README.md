@@ -22,7 +22,7 @@ cargo add drova_plugins
 
 ```rust
 use drova_sdk::{requester::{Error, RequesterBuilder}, sites::UrlMatcher};
-use drova_plugins::{requester_plugins, searx_plugin, sites::SearxngSite};
+use drova_plugins::{requester_plugins, searx_plugin, sites::SearxngSite, protocols::{HttpRequest, SearxProtocol}};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {
@@ -30,6 +30,11 @@ async fn main() -> Result<(), Error> {
   let requester = RequesterBuilder::default()
       .plugin(requester_plugins)
       .plugin(searx_plugin)
+      .request_rule::<HttpRequest>(UrlMatcher::new(), |ctx, request| {
+          if ctx.via::<SearxProtocol>() || ctx.via::<SearxngSite>() {
+              request.header("Cookie", "session=...")
+          } else { request }
+      })
       .site(
           UrlMatcher::new()
               .schemes(["http*"])

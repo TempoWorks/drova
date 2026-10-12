@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use drova_sdk::requester::{Error, ProtocolHandler, Response};
+use drova_sdk::requests::{FetchContext, FetchFuture};
 use url::Url;
 
 use super::HttpProtocol;
@@ -35,29 +36,55 @@ impl SearxProtocol {
         self
     }
 
-    async fn fetch_html(&self, url: &Url) -> Result<Response, Error> {
-        let mut response = HttpProtocol.fetch(&html_url(url)?).await?;
+    async fn fetch_html(
+        &self,
+        url: &Url,
+        ctx: Option<&FetchContext<'_, '_>>,
+    ) -> Result<Response, Error> {
+        let mut response = fetch_http(&html_url(url)?, ctx).await?;
         if response.ty == "text/html" {
             response.ty = SEARXNG_HTML.into();
         }
         Ok(response)
+    }
+
+    async fn fetch_inner(
+        &self,
+        url: &Url,
+        ctx: Option<&FetchContext<'_, '_>>,
+    ) -> Result<Response, Error> {
+        match fetch_http(&json_url(url)?, ctx).await {
+            Ok(response) => match prepare_response(response)? {
+                Some(response) => Ok(response),
+                None if self.fallback == SearxFallback::Html => self.fetch_html(url, ctx).await,
+                None => Err(Error::UnsupportedInput),
+            },
+            Err(error) if api_unavailable(&error) && self.fallback == SearxFallback::Html => {
+                self.fetch_html(url, ctx).await
+            }
+            Err(error) => Err(error),
+        }
     }
 }
 
 #[async_trait]
 impl ProtocolHandler for SearxProtocol {
     async fn fetch(&self, url: &Url) -> Result<Response, Error> {
-        match HttpProtocol.fetch(&json_url(url)?).await {
-            Ok(response) => match prepare_response(response)? {
-                Some(response) => Ok(response),
-                None if self.fallback == SearxFallback::Html => self.fetch_html(url).await,
-                None => Err(Error::UnsupportedInput),
-            },
-            Err(error) if api_unavailable(&error) && self.fallback == SearxFallback::Html => {
-                self.fetch_html(url).await
-            }
-            Err(error) => Err(error),
-        }
+        self.fetch_inner(url, None).await
+    }
+    fn fetch_with_context<'s>(
+        &'s self,
+        url: &'s Url,
+        ctx: &'s FetchContext<'_, '_>,
+    ) -> FetchFuture<'s> {
+        Box::pin(self.fetch_inner(url, Some(ctx)))
+    }
+}
+
+async fn fetch_http(url: &Url, ctx: Option<&FetchContext<'_, '_>>) -> Result<Response, Error> {
+    match ctx {
+        Some(ctx) => ctx.fetch_or(url, &HttpProtocol).await,
+        None => HttpProtocol.fetch(url).await,
     }
 }
 

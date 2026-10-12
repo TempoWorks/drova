@@ -8,28 +8,6 @@ pub(crate) struct Registry<'a, T: ?Sized> {
     globs: Vec<usize>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn exact_matches_win_and_glob_replacement_preserves_priority() {
-        let mut registry = Registry::<str>::default();
-        for id in 0..1000 {
-            registry.insert(format!("exact/{id}"), "unrelated");
-        }
-        registry.insert("text/*".into(), "first");
-        registry.insert("*".into(), "second");
-        registry.insert("text/plain".into(), "exact");
-        registry.insert("text/*".into(), "replacement");
-        assert_eq!(registry.matching("text/plain"), Some("exact"));
-        assert_eq!(registry.matching("text/html"), Some("replacement"));
-        assert_eq!(registry.exact("text/html"), None);
-        assert_eq!(registry.globs.len(), 2);
-        assert_eq!(registry.keys().count(), 1003);
-    }
-}
-
 impl<T: ?Sized> Default for Registry<'_, T> {
     fn default() -> Self {
         Self {
@@ -63,5 +41,27 @@ impl<'a, T: ?Sized> Registry<'a, T> {
                 glob_match(pattern, key).then_some(*handler)
             })
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exact_matches_win_and_glob_replacement_preserves_priority() {
+        let mut registry = Registry::<str>::default();
+        for id in 0..1000 {
+            registry.insert(format!("exact/{id}"), "unrelated");
+        }
+        registry.insert("text/*".into(), "first");
+        registry.insert("*".into(), "second");
+        registry.insert("text/plain".into(), "exact");
+        registry.insert("text/*".into(), "replacement");
+        assert_eq!(registry.matching("text/plain"), Some("exact"));
+        assert_eq!(registry.matching("text/html"), Some("replacement"));
+        assert_eq!(registry.exact("text/html"), None);
+        assert_eq!(registry.globs.len(), 2);
+        assert_eq!(registry.keys().count(), 1003);
     }
 }

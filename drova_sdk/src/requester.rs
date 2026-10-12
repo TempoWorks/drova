@@ -168,12 +168,7 @@ impl<'a> Requester<'a> {
         url: &Url,
         parent: Option<&Source<'_>>,
     ) -> Result<Response, Error> {
-        let scheme = url.scheme();
-
-        let protocol = self
-            .protocols
-            .matching(scheme)
-            .ok_or(Error::UnsupportedProtocol)?;
+        let protocol = self.protocol_for(url).ok_or(Error::UnsupportedProtocol)?;
 
         let ctx = FetchContext {
             requester: self,
@@ -183,6 +178,10 @@ impl<'a> Requester<'a> {
             },
         };
         protocol.fetch_with_context(url, &ctx).await
+    }
+
+    pub(crate) fn protocol_for(&self, url: &Url) -> Option<&'a (dyn ProtocolHandler + 'a)> {
+        self.protocols.matching(url.scheme())
     }
 
     /// Parse a fetched response using exact MIME matching, then registered globs.

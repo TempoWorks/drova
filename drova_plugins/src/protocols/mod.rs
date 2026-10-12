@@ -5,6 +5,6 @@ mod searx;
 
 pub use gemini::GeminiProtocol;
 pub use gopher::{GopherProtocol, ItemType as GopherItemType};
-pub use http::HttpProtocol;
+pub use http::{HttpMethod, HttpProtocol, HttpRequest};
 pub(crate) use searx::api_unavailable;
 pub use searx::{html_url, json_url, search_url, SearxFallback, SearxProtocol};

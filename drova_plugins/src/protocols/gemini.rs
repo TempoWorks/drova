@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use drova_sdk::requester::{Error, ProtocolHandler, Response, ResponseData};
+use drova_sdk::requests::{FetchContext, FetchFuture};
 use tokio_gemini::{certs::SelfsignedCertVerifier, LibError, StatusCode};
 
 use crate::utils::mime_to_str;
@@ -8,6 +9,20 @@ pub struct GeminiProtocol;
 
 #[async_trait]
 impl ProtocolHandler for GeminiProtocol {
+    fn fetch_with_context<'s>(
+        &'s self,
+        url: &'s url::Url,
+        ctx: &'s FetchContext<'_, '_>,
+    ) -> FetchFuture<'s> {
+        if !ctx.has_rules::<url::Url>() {
+            return self.fetch(url);
+        }
+        Box::pin(async move {
+            let target = ctx.apply_rules(url, url.clone());
+            self.fetch(&target).await
+        })
+    }
+
     async fn fetch(&self, url: &url::Url) -> Result<Response, Error> {
         let client = tokio_gemini::Client::builder()
             .with_selfsigned_cert_verifier(CertVerifier)

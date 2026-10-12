@@ -206,6 +206,7 @@ async fn rate_limits_and_malformed_json_do_not_trigger_fallback() {
     for (reply, malformed) in [
         (Reply::error(429), false),
         (Reply::json("broken JSON"), true),
+        (Reply::json(r#"{"query":false,"results":[}"#), true),
     ] {
         let server = Server::start([reply]).await;
         let site = SearxngSite::new();

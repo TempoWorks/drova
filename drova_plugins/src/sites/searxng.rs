@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use drova_sdk::{
-    requester::{Error, InputHandler, Response, ResponseData},
+    requester::{Error, Response, ResponseData},
     sites::{RequestContext, SiteHandler, SiteOutcome},
 };
 
 use crate::{
-    inputs::{prepare_response, SearxInput},
+    inputs::parse_site_response,
     protocols::{api_unavailable, json_url},
 };
 
@@ -41,29 +41,27 @@ impl SearxngSite {
 #[async_trait]
 impl SiteHandler for SearxngSite {
     async fn process(&self, ctx: &mut RequestContext<'_, '_>) -> Result<SiteOutcome, Error> {
-        let url = ctx.url().clone();
+        let url = ctx.url();
         if !matches!(url.scheme(), "http" | "https") || !url.query_pairs().any(|(k, _)| k == "q") {
             return Ok(SiteOutcome::Fallback);
         }
-        if self.detect && !self.cache.contains(&url) {
+        if self.detect && !self.cache.contains(url) {
             if !(url.path().ends_with('/') || url.path().ends_with("/search")) {
                 return Ok(SiteOutcome::Fallback);
             }
+            let url = url.clone();
             if !self.cache.detect(&url, ctx.original_response().await?) {
                 return Ok(SiteOutcome::Fallback);
             }
         }
-        let response = match ctx.fetch(&json_url(&url)?).await {
+        let api_url = json_url(ctx.url())?;
+        let response = match ctx.fetch(&api_url).await {
             Ok(response) => response,
             Err(error) if api_unavailable(&error) => return Ok(SiteOutcome::Fallback),
             Err(error) => return Err(error),
         };
-        let Some(response) = prepare_response(response)? else {
+        let Some(page) = parse_site_response(&response)? else {
             return Ok(SiteOutcome::Fallback);
-        };
-        let page = match response.data {
-            ResponseData::TextOutput(text) => SearxInput.process_text(text, Some(&url))?,
-            ResponseData::BitsOutput(bytes) => SearxInput.process_bytes(bytes, Some(&url))?,
         };
         Ok(SiteOutcome::Parsed(page))
     }

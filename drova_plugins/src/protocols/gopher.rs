@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use drova_sdk::requester::{Error, ProtocolHandler, Response, ResponseData};
+use drova_sdk::requests::{FetchContext, FetchFuture};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use url::Url;
@@ -131,6 +132,20 @@ pub struct GopherProtocol;
 
 #[async_trait]
 impl ProtocolHandler for GopherProtocol {
+    fn fetch_with_context<'s>(
+        &'s self,
+        url: &'s url::Url,
+        ctx: &'s FetchContext<'_, '_>,
+    ) -> FetchFuture<'s> {
+        if !ctx.has_rules::<url::Url>() {
+            return self.fetch(url);
+        }
+        Box::pin(async move {
+            let target = ctx.apply_rules(url, url.clone());
+            self.fetch(&target).await
+        })
+    }
+
     async fn fetch(&self, url: &Url) -> Result<Response, Error> {
         let host = url.host_str().ok_or(Error::InvalidUrl)?;
         let port = url.port().unwrap_or(DEFAULT_PORT);

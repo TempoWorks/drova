@@ -2,7 +2,7 @@ use std::any::type_name;
 
 use url::Url;
 
-use crate::requester::{Error, Requester, Response};
+use crate::requester::{Error, ProtocolHandler, Requester, Response};
 
 pub(crate) struct Source<'r> {
     pub name: &'static str,
@@ -49,5 +49,25 @@ impl FetchContext<'_, '_> {
     /// Delegate to another registered protocol while preserving initiator context.
     pub async fn fetch(&self, url: &Url) -> Result<Response, Error> {
         self.requester.fetch_from(url, Some(&self.source)).await
+    }
+
+    /// Use a fallback transport only when no registered protocol matches.
+    pub async fn fetch_or(
+        &self,
+        url: &Url,
+        fallback: &dyn ProtocolHandler,
+    ) -> Result<Response, Error> {
+        let protocol: &dyn ProtocolHandler = match self.requester.protocol_for(url) {
+            Some(protocol) => protocol,
+            None => fallback,
+        };
+        let ctx = FetchContext {
+            requester: self.requester,
+            source: Source {
+                name: protocol.source_name(),
+                parent: Some(&self.source),
+            },
+        };
+        protocol.fetch_with_context(url, &ctx).await
     }
 }
