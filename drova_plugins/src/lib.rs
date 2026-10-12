@@ -6,7 +6,21 @@ use protocols::{GeminiProtocol, GopherProtocol, HttpProtocol};
 pub mod inputs;
 pub mod outputs;
 pub mod protocols;
+pub mod sites;
 mod utils;
+
+/// Register explicit SearXNG schemes without enabling automatic site detection.
+pub fn searx_plugin(app: RequesterBuilder<'_>) -> RequesterBuilder<'_> {
+    use inputs::{SearxHtmlInput, SearxInput, SEARXNG_HTML, SEARXNG_JSON};
+    use protocols::SearxProtocol;
+    static PROTOCOL: SearxProtocol = SearxProtocol::new();
+
+    app.protocol("searx", &PROTOCOL)
+        .protocol("searx+http", &PROTOCOL)
+        .protocol("searx+https", &PROTOCOL)
+        .input(SEARXNG_JSON, &SearxInput)
+        .input(SEARXNG_HTML, &SearxHtmlInput)
+}
 
 pub fn requester_plugins(app: RequesterBuilder) -> RequesterBuilder {
     app.protocol("http", &HttpProtocol)

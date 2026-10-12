@@ -12,6 +12,7 @@ impl ProtocolHandler for HttpProtocol {
     async fn fetch(&self, url: &url::Url) -> Result<Response, Error> {
         let res = reqwest::get(url.to_string())
             .await
+            .and_then(reqwest::Response::error_for_status)
             .map_err(match_reqwest_error)?;
 
         let ty = mime_to_str(
